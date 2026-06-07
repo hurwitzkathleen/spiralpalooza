@@ -27,6 +27,7 @@ body{font-family:var(--sans);color:var(--cf-text);background:var(--cf-cream);fon
 nav{background:var(--cf-blue);border-bottom:3px solid var(--cf-orange);padding:0 1.5rem;display:flex;align-items:center;justify-content:space-between;min-height:80px;position:sticky;top:0;z-index:100;flex-wrap:wrap}
 .hamburger{display:none;background:none;border:none;cursor:pointer;padding:8px;flex-direction:column;gap:5px}
 .hamburger span{display:block;width:24px;height:2px;background:#f5d9b8;border-radius:2px;transition:all 0.2s}
+@media(min-width:681px){.nav-links{display:flex!important}}
 @media(max-width:680px){
   nav{padding:0 1rem;min-height:64px;position:relative}
   .hamburger{display:flex}
@@ -59,12 +60,16 @@ nav{background:var(--cf-blue);border-bottom:3px solid var(--cf-orange);padding:0
   .row2,.home-cards{grid-template-columns:1fr!important}
   .size-grid{grid-template-columns:repeat(auto-fill,minmax(65px,1fr))}
   .vol-grid{grid-template-columns:1fr!important}
+  .party-headers{display:none!important}
+  .party-row{grid-template-columns:1fr!important;gap:6px!important}
+  .party-row input{width:100%!important}
+  .party-row input.party-name::before{content:"Name"}
 }
 .logo{display:flex;align-items:center;gap:10px}
 .logo-spiral{width:130px;height:130px;background:transparent;display:flex;align-items:center;justify-content:center;flex-shrink:0}
 .logo-text{font-family:var(--sans);font-size:22px;font-weight:700;color:#ffffff;line-height:1.2}
 .logo-sub{font-size:14px;color:#f5d9b8;font-family:var(--sans)}
-.nav-links{display:flex;gap:4px}
+.nav-links{display:none;gap:4px}
 .nav-links a{padding:6px 12px;border-radius:20px;font-size:13px;font-weight:700;text-decoration:none;color:#f5d9b8;cursor:pointer;transition:all 0.15s;font-family:var(--sans)}
 .nav-links a:hover{background:var(--cf-orange-light);color:var(--cf-green)}
 .nav-links a.active{background:var(--cf-orange);color:var(--cf-text)}
@@ -364,16 +369,16 @@ section{display:none}section.active{display:block}
         <div style="background:var(--cf-blue);color:#fff;padding:8px 14px;font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px">Who&rsquo;s Coming With You?</div>
         <div style="padding:1rem 1.25rem">
           <p style="font-size:13px;color:var(--cf-muted);margin-bottom:0.85rem;font-style:italic">Add everyone in your group &mdash; children, family, friends.</p>
-          <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin-bottom:4px">
+          <div class="party-headers" style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin-bottom:4px">
             <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.4px;color:var(--cf-muted)">Name</div>
             <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.4px;color:var(--cf-muted)">Relationship</div>
             <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.4px;color:var(--cf-muted)">Email (optional)</div>
           </div>
           <div id="rsvp-party-list">
             <div class="party-row" style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:8px;align-items:center">
-              <input type="text" class="party-name" placeholder="Name" style="padding:8px 10px;border:1.5px solid var(--cf-border);border-radius:4px;font-family:var(--sans);font-size:14px;outline:none">
-              <input type="text" class="party-rel" placeholder="e.g. child, spouse" style="padding:8px 10px;border:1.5px solid var(--cf-border);border-radius:4px;font-family:var(--sans);font-size:14px;outline:none">
-              <input type="email" class="party-email" placeholder="email@example.com" style="padding:8px 10px;border:1.5px solid var(--cf-border);border-radius:4px;font-family:var(--sans);font-size:14px;outline:none">
+              <input type="text" class="party-name" placeholder="Name" style="padding:8px 10px;border:1.5px solid var(--cf-border);border-radius:4px;font-family:var(--sans);font-size:14px;outline:none;min-width:0">
+              <input type="text" class="party-rel" placeholder="Relationship" style="padding:8px 10px;border:1.5px solid var(--cf-border);border-radius:4px;font-family:var(--sans);font-size:14px;outline:none;min-width:0">
+              <input type="email" class="party-email" placeholder="Email" style="padding:8px 10px;border:1.5px solid var(--cf-border);border-radius:4px;font-family:var(--sans);font-size:14px;outline:none;min-width:0">
             </div>
           </div>
           <button onclick="addPartyMember()" style="background:none;border:none;color:var(--cf-blue);font-family:var(--sans);font-size:13px;font-weight:700;cursor:pointer;padding:4px 0;margin-top:4px">+ Add another person</button>
@@ -429,9 +434,9 @@ function addPartyMember(){
   var row = document.createElement("div");
   row.className = "party-row";
   row.style.cssText = "display:grid;grid-template-columns:1fr 1fr 1fr auto;gap:8px;margin-bottom:8px;align-items:center";
-  row.innerHTML = '<input type="text" class="party-name" placeholder="Name" style="padding:8px 10px;border:1.5px solid var(--cf-border);border-radius:4px;font-family:var(--sans);font-size:14px;outline:none">'
-    + '<input type="text" class="party-rel" placeholder="e.g. child, spouse" style="padding:8px 10px;border:1.5px solid var(--cf-border);border-radius:4px;font-family:var(--sans);font-size:14px;outline:none">'
-    + '<input type="email" class="party-email" placeholder="email@example.com" style="padding:8px 10px;border:1.5px solid var(--cf-border);border-radius:4px;font-family:var(--sans);font-size:14px;outline:none">'
+  row.innerHTML = '<input type="text" class="party-name" placeholder="Name" style="padding:8px 10px;border:1.5px solid var(--cf-border);border-radius:4px;font-family:var(--sans);font-size:14px;outline:none;min-width:0">'
+    + '<input type="text" class="party-rel" placeholder="Relationship" style="padding:8px 10px;border:1.5px solid var(--cf-border);border-radius:4px;font-family:var(--sans);font-size:14px;outline:none;min-width:0">'
+    + '<input type="email" class="party-email" placeholder="Email" style="padding:8px 10px;border:1.5px solid var(--cf-border);border-radius:4px;font-family:var(--sans);font-size:14px;outline:none;min-width:0">'
     + '<button onclick="this.parentElement.remove()" style="background:none;border:none;color:#aaa;font-size:20px;cursor:pointer;padding:0;line-height:1">&times;</button>';
   list.appendChild(row);
 }
