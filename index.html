@@ -24,7 +24,28 @@
 body{font-family:var(--sans);color:var(--cf-text);background:var(--cf-cream);font-size:16px;line-height:1.65}
 .top-bar{background:var(--cf-blue);color:#fff;font-size:14px;text-align:center;padding:7px 1rem;font-family:var(--sans);display:flex;align-items:center;justify-content:center;gap:18px;flex-wrap:wrap}
 .top-bar strong{font-weight:700}
-nav{background:var(--cf-blue);border-bottom:3px solid var(--cf-orange);padding:0 1.5rem;display:flex;align-items:center;justify-content:space-between;height:80px;position:sticky;top:0;z-index:100;overflow:visible}
+nav{background:var(--cf-blue);border-bottom:3px solid var(--cf-orange);padding:0 1.5rem;display:flex;align-items:center;justify-content:space-between;min-height:80px;position:sticky;top:0;z-index:100;overflow:visible;flex-wrap:wrap}
+.hamburger{display:none;background:none;border:none;cursor:pointer;padding:8px;flex-direction:column;gap:5px}
+.hamburger span{display:block;width:24px;height:2px;background:#f5d9b8;border-radius:2px;transition:all 0.2s}
+@media(max-width:680px){
+  nav{padding:0 1rem;min-height:64px}
+  .hamburger{display:flex}
+  .nav-links{display:none;flex-direction:column;width:100%;padding:0.5rem 0 1rem;gap:4px;order:3}
+  .nav-links.open{display:flex}
+  .nav-links a{padding:10px 14px;border-radius:4px;font-size:15px;border-bottom:1px solid rgba(255,255,255,0.08)}
+  .logo-text{font-size:16px}
+  .logo-sub{font-size:10px}
+  .logo-spiral{width:80px!important;height:80px!important}
+  .logo-spiral img{width:72px!important;height:72px!important}
+  .top-bar{font-size:11px;gap:10px;padding:6px 0.75rem}
+  .carousel-outer{height:280px}
+  .slide{height:280px!important}
+  .slide-h{font-size:22px!important}
+  .wrap{padding:1.5rem 1rem}
+  .row2,.home-cards{grid-template-columns:1fr!important}
+  .size-grid{grid-template-columns:repeat(auto-fill,minmax(65px,1fr))}
+  .vol-grid{grid-template-columns:1fr!important}
+}
 .logo{display:flex;align-items:center;gap:10px}
 .logo-spiral{width:130px;height:130px;background:transparent;display:flex;align-items:center;justify-content:center;flex-shrink:0}
 .logo-text{font-family:var(--sans);font-size:22px;font-weight:700;color:#ffffff;line-height:1.2}
@@ -41,9 +62,9 @@ section{display:none}section.active{display:block}
 .slide{min-width:100%;height:400px;position:relative;overflow:hidden;background:#3D1C00;flex-shrink:0}
 .slide-img{position:absolute;top:0;left:0;right:0;bottom:0;width:100%;height:100%;object-fit:cover;object-position:center center;opacity:1;z-index:1;display:block}
 .slide-body{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);z-index:4;text-align:center;padding:2rem 3rem;max-width:640px;width:100%;text-shadow:0 2px 8px rgba(0,0,0,0.9),0 0 30px rgba(0,0,0,0.6)}
-.slide-eyebrow{font-size:11px;font-weight:700;letter-spacing:2px;text-transform:uppercase;margin-bottom:0.6rem;font-family:var(--sans)}
+.slide-eyebrow{font-size:14px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;margin-bottom:0.6rem;font-family:var(--sans);opacity:1}
 .slide-h{font-family:var(--sans);font-size:clamp(22px,3.5vw,38px);font-weight:700;line-height:1.25;margin-bottom:0.75rem}
-.slide-quote{font-family:var(--sans);font-style:italic;font-size:14px;opacity:0.85;margin-bottom:1.25rem}
+.slide-quote{font-family:var(--sans);font-style:italic;font-size:16px;opacity:1;margin-bottom:1.25rem;font-weight:600}
 .slide-cta{display:inline-block;padding:10px 24px;border-radius:4px;font-size:13px;font-weight:700;cursor:pointer;border:none;transition:opacity 0.15s;font-family:var(--sans);letter-spacing:0.3px;text-decoration:none}
 .slide-cta:hover{opacity:0.82}
 .cbtn{position:absolute;top:50%;transform:translateY(-50%);width:38px;height:38px;border-radius:50%;border:1.5px solid rgba(0,0,0,0.15);background:rgba(255,255,255,0.85);cursor:pointer;display:flex;align-items:center;justify-content:center;z-index:10;font-size:20px;color:#444;transition:background 0.15s;font-family:var(--sans);line-height:1}
@@ -112,11 +133,15 @@ section{display:none}section.active{display:block}
       <div class="logo-sub">Friends of the Family Remembering Party</div>
     </div>
   </div>
-  <div class="nav-links">
-    <a class="active" onclick="show('home',this)">Home</a>
-    <a onclick="show('rsvp',this)">RSVP</a>
-    <a onclick="show('shirts',this)">T-Shirts</a>
-    <a onclick="show('volunteer',this)">Volunteer</a>
+  <button class="hamburger" onclick="toggleMenu()" aria-label="Menu">
+    <span></span><span></span><span></span>
+  </button>
+  <div class="nav-links" id="nav-links">
+    <a class="active" onclick="show('home',this);closeMenu()">Home</a>
+    <a onclick="show('rsvp',this);closeMenu()">RSVP</a>
+    <a onclick="show('shirts',this);closeMenu()">T-Shirts</a>
+    <a onclick="show('volunteer',this);closeMenu()">Volunteer</a>
+    <a onclick="show('whocoming',this);closeMenu()" style="cursor:pointer">Who&rsquo;s Coming</a>
   </div>
 </nav>
 
@@ -125,38 +150,38 @@ section{display:none}section.active{display:block}
   <div class="carousel-outer">
     <div class="carousel-track" id="track">
         <div class="slide">
-          <img class="slide-img" src="https://drive.google.com/thumbnail?id=1FbEL9HG_9vDUq3kM1tO2IRpX0LmrdEBI&sz=w1200" alt="Children First memory">
+          <img class="slide-img" src="https://drive.google.com/thumbnail?id=1FpdNLBmBeL6Z3-KMDIm0XWpb5AIt4mI2&sz=w1200" alt="Children First memory">
           <div class="slide-body">
-            <div class="slide-eyebrow" style="color:#f5d9b8">Welcome</div>
+            <div class="slide-eyebrow" style="color:#ffffff">Welcome</div>
             <div class="slide-h" style="color:#ffffff">Friends of the Family:<br>The Spiralpalooza<br>Remembering Party</div>
-            <div class="slide-quote" style="color:#f5d9b8">Celebrating 36 years of Children First &mdash; together, what we have made together!</div>
+            <div class="slide-quote" style="color:#ffffff">Celebrating 36 years of Children First &mdash; together, what we have made together!</div>
             <span class="slide-cta" onclick="show('rsvp',null)" style="background:#E8D840;color:#3D1C00">RSVP Now</span>
           </div>
         </div>
         <div class="slide">
-          <img class="slide-img" src="https://drive.google.com/thumbnail?id=1_hsCjkCEh3vNmqlkMSWqV7MA4Y4nr3_m&sz=w1200" alt="Children First memory">
+          <img class="slide-img" src="https://drive.google.com/thumbnail?id=1bvESII0XM3go-92npLCOFpdPmDDuxv2c&sz=w1200" alt="Children First memory">
           <div class="slide-body">
-            <div class="slide-eyebrow" style="color:#f5d9b8">October 3, 2026</div>
+            <div class="slide-eyebrow" style="color:#ffffff">October 3, 2026</div>
             <div class="slide-h" style="color:#ffffff">Join us on the playground<br>at 1211 Carroll Street</div>
-            <div class="slide-quote" style="color:#f5d9b8">RSVP by September 15, 2026 &middot; 4:00 pm until&hellip; &middot; 1211 Carroll St, Durham NC</div>
+            <div class="slide-quote" style="color:#ffffff">RSVP by September 15, 2026 &middot; 4:00 pm until&hellip; &middot; 1211 Carroll St, Durham NC</div>
             <span class="slide-cta" onclick="window.open('https://maps.google.com/?q=1211+Carroll+Street+Durham+NC+27707','_blank')" style="background:#E8D840;color:#3D1C00">Get directions</span>
           </div>
         </div>
         <div class="slide">
-          <img class="slide-img" src="https://drive.google.com/thumbnail?id=1bPp24Gw35CMUL37UOt8WeHfgD-fV6Y2B&sz=w1200" alt="Children First memory">
+          <img class="slide-img" src="https://drive.google.com/thumbnail?id=1v1An9RAluOvPmDRraX5RVy7WNBneFlpf&sz=w1200" alt="Children First memory">
           <div class="slide-body">
-            <div class="slide-eyebrow" style="color:#f5d9b8">Reunion & Remembrance</div>
+            <div class="slide-eyebrow" style="color:#ffffff">Reunion & Remembrance</div>
             <div class="slide-h" style="color:#ffffff">Reconnecting families,<br>honoring a legacy</div>
-            <div class="slide-quote" style="color:#f5d9b8">&ldquo;Hold space for both gratitude and grief. Invite reflection, remembering, and reconnecting.&rdquo;</div>
+            <div class="slide-quote" style="color:#ffffff">&ldquo;Hold space for both gratitude and grief. Invite reflection, remembering, and reconnecting.&rdquo;</div>
             <span class="slide-cta" onclick="show('volunteer',null)" style="background:#E8D840;color:#3D1C00">Help make it happen</span>
           </div>
         </div>
         <div class="slide">
-          <img class="slide-img" src="https://drive.google.com/thumbnail?id=1i7Sn8mhHAWkxHoSSuqxgXNgXdAxP78da&sz=w1200" alt="Children First memory">
+          <img class="slide-img" src="https://drive.google.com/thumbnail?id=1123vm5xmfETbTtevChny4ZxCAy_MKTIy&sz=w1200" alt="Children First memory">
           <div class="slide-body">
-            <div class="slide-eyebrow" style="color:#f5d9b8">T-Shirts</div>
+            <div class="slide-eyebrow" style="color:#ffffff">T-Shirts</div>
             <div class="slide-h" style="color:#ffffff">Wear your Spiralpalooza<br>spirit with pride</div>
-            <div class="slide-quote" style="color:#f5d9b8">Shirts designed by Durham illustrator Iris Gottlieb &mdash; featuring every Children First sign!</div>
+            <div class="slide-quote" style="color:#ffffff">Shirts designed by Durham illustrator Iris Gottlieb &mdash; featuring every Children First sign!</div>
             <span class="slide-cta" onclick="show('shirts',null)" style="background:#E8D840;color:#3D1C00">Order your shirt</span>
           </div>
         </div>
@@ -198,9 +223,13 @@ section{display:none}section.active{display:block}
       </ul>
     </div>
 
-    <div style="background:#fff;border:1.5px solid var(--cf-border);border-left:4px solid var(--cf-blue);border-radius:4px;padding:1rem 1.25rem;font-size:14px;margin-bottom:1.5rem;line-height:1.6">
-      <div style="font-weight:700;margin-bottom:0.4rem;color:var(--cf-blue)">Your &ldquo;Must-Do&rdquo; at the Party</div>
-      Come to the Studio to make a page for the <strong>Children First Spiralpalooza Portfolio</strong> &mdash; share a reflection, a memory, a gratitude, a lingering question, or a wish for the future. And join us for the <strong>Magic Circle</strong>, where every Children Firster is invited to share one memory!
+    <div style="background:#fff;border:1.5px solid var(--cf-border);border-left:4px solid var(--cf-blue);border-radius:4px;padding:1rem 1.25rem;font-size:14px;margin-bottom:1rem;line-height:1.6">
+      <div style="font-weight:700;margin-bottom:0.4rem;color:var(--cf-blue)">&#9998; Must-Do: Make a Portfolio Page</div>
+      Come to the Studio to make a page for the <strong>Children First Spiralpalooza Portfolio</strong> &mdash; share a reflection, a memory, a gratitude, a lingering question, or a wish for the future.
+    </div>
+    <div style="background:#fff;border:1.5px solid var(--cf-border);border-left:4px solid var(--cf-orange);border-radius:4px;padding:1rem 1.25rem;font-size:14px;margin-bottom:1.5rem;line-height:1.6">
+      <div style="font-weight:700;margin-bottom:0.4rem;color:var(--cf-orange)">&#9733; Must-Do: The Magic Circle</div>
+      Join us for the <strong>Magic Circle</strong>, where every Children Firster is invited to share one memory!
     </div>
 
     <div class="card" style="background:#fff;border:1.5px solid var(--cf-border);border-radius:4px;padding:1.25rem 1.5rem;margin-bottom:1.5rem;border-left:4px solid var(--cf-green)">
@@ -244,6 +273,9 @@ section{display:none}section.active{display:block}
   <div class="wrap">
     <div class="page-title">RSVP</div>
     <div class="page-sub">Let us know you&rsquo;re coming to Spiralpalooza on October 3, 2026! <strong>RSVP deadline: September 15, 2026.</strong></div>
+    <div style="margin-bottom:1.25rem">
+      <a onclick="show('whocoming',null)" style="color:var(--cf-blue);font-size:14px;font-weight:700;cursor:pointer;text-decoration:underline">&#128101; See who&rsquo;s coming so far &rarr;</a>
+    </div>
 
     <div id="rsvp-success-msg" style="display:none;background:#eaf4ee;border:1px solid #a8d9b5;border-radius:4px;padding:1rem 1.25rem;color:#2e6b40;font-size:14px;margin-bottom:1rem;line-height:1.6">
       &#10003; <strong>Thank you!</strong> Your RSVP is in &mdash; we can&rsquo;t wait to see you at Spiralpalooza on October 3rd!
@@ -317,10 +349,17 @@ section{display:none}section.active{display:block}
       <div style="background:#fff;border:1.5px solid var(--cf-border);border-radius:6px;overflow:hidden;margin-bottom:1rem">
         <div style="background:var(--cf-blue);color:#fff;padding:8px 14px;font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px">Who&rsquo;s Coming With You?</div>
         <div style="padding:1rem 1.25rem">
-          <p style="font-size:13px;color:var(--cf-muted);margin-bottom:0.85rem;font-style:italic">List each person&rsquo;s name and their relationship to you, e.g. &ldquo;Fiona Hurwitz (child, age 8)&rdquo;</p>
+          <p style="font-size:13px;color:var(--cf-muted);margin-bottom:0.85rem;font-style:italic">Add everyone in your group &mdash; children, family, friends.</p>
+          <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin-bottom:4px">
+            <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.4px;color:var(--cf-muted)">Name</div>
+            <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.4px;color:var(--cf-muted)">Relationship</div>
+            <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.4px;color:var(--cf-muted)">Email (optional)</div>
+          </div>
           <div id="rsvp-party-list">
-            <div class="party-row" style="display:flex;gap:8px;margin-bottom:8px;align-items:center">
-              <input type="text" placeholder="Name (relationship)" style="flex:1;padding:8px 10px;border:1.5px solid var(--cf-border);border-radius:4px;font-family:var(--sans);font-size:14px;outline:none">
+            <div class="party-row" style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:8px;align-items:center">
+              <input type="text" class="party-name" placeholder="Name" style="padding:8px 10px;border:1.5px solid var(--cf-border);border-radius:4px;font-family:var(--sans);font-size:14px;outline:none">
+              <input type="text" class="party-rel" placeholder="e.g. child, spouse" style="padding:8px 10px;border:1.5px solid var(--cf-border);border-radius:4px;font-family:var(--sans);font-size:14px;outline:none">
+              <input type="email" class="party-email" placeholder="email@example.com" style="padding:8px 10px;border:1.5px solid var(--cf-border);border-radius:4px;font-family:var(--sans);font-size:14px;outline:none">
             </div>
           </div>
           <button onclick="addPartyMember()" style="background:none;border:none;color:var(--cf-blue);font-family:var(--sans);font-size:13px;font-weight:700;cursor:pointer;padding:4px 0;margin-top:4px">+ Add another person</button>
@@ -342,6 +381,24 @@ section{display:none}section.active{display:block}
         </div>
       </div>
 
+      <!-- List permission -->
+      <div style="background:#fff;border:1.5px solid var(--cf-border);border-radius:6px;overflow:hidden;margin-bottom:1rem">
+        <div style="background:var(--cf-blue);color:#fff;padding:8px 14px;font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px">One More Thing</div>
+        <div style="padding:1rem 1.25rem">
+          <p style="font-size:14px;color:var(--cf-text);margin-bottom:0.85rem;line-height:1.6">We&rsquo;d love to share a running list of who&rsquo;s coming on this website so the community can see who will be at Spiralpalooza. May we list your name and years affiliated with Children First on the site?</p>
+          <div style="display:flex;flex-direction:column;gap:8px">
+            <label style="display:flex;align-items:center;gap:10px;font-size:14px;cursor:pointer;padding:8px 12px;border:1.5px solid var(--cf-border);border-radius:4px;background:#fafaf8">
+              <input type="radio" name="rsvp-permission" value="Yes" style="width:auto;padding:0;border:none;accent-color:var(--cf-blue)">
+              <span><strong>Yes!</strong> Please list my name and years on the site.</span>
+            </label>
+            <label style="display:flex;align-items:center;gap:10px;font-size:14px;cursor:pointer;padding:8px 12px;border:1.5px solid var(--cf-border);border-radius:4px;background:#fafaf8">
+              <input type="radio" name="rsvp-permission" value="No" style="width:auto;padding:0;border:none;accent-color:var(--cf-blue)">
+              <span><strong>No thanks</strong> &mdash; I&rsquo;d prefer not to be listed.</span>
+            </label>
+          </div>
+        </div>
+      </div>
+
       <div id="rsvp-error" style="display:none;color:#a32d2d;font-size:13px;margin-bottom:0.75rem;padding:0.5rem 0.75rem;background:#fde8e8;border-radius:4px"></div>
 
       <button onclick="submitRSVP()" id="rsvp-submit-btn" style="background:var(--cf-blue);color:#fff;border:none;padding:11px 28px;border-radius:4px;font-family:var(--sans);font-size:14px;font-weight:700;cursor:pointer;transition:background 0.15s">Submit RSVP &rarr;</button>
@@ -357,8 +414,11 @@ function addPartyMember(){
   var list = document.getElementById("rsvp-party-list");
   var row = document.createElement("div");
   row.className = "party-row";
-  row.style.cssText = "display:flex;gap:8px;margin-bottom:8px;align-items:center";
-  row.innerHTML = '<input type="text" placeholder="Name (relationship)" style="flex:1;padding:8px 10px;border:1.5px solid var(--cf-border);border-radius:4px;font-family:var(--sans);font-size:14px;outline:none"><button onclick="this.parentElement.remove()" style="background:none;border:none;color:#aaa;font-size:18px;cursor:pointer;padding:0 4px;line-height:1">&times;</button>';
+  row.style.cssText = "display:grid;grid-template-columns:1fr 1fr 1fr auto;gap:8px;margin-bottom:8px;align-items:center";
+  row.innerHTML = '<input type="text" class="party-name" placeholder="Name" style="padding:8px 10px;border:1.5px solid var(--cf-border);border-radius:4px;font-family:var(--sans);font-size:14px;outline:none">'
+    + '<input type="text" class="party-rel" placeholder="e.g. child, spouse" style="padding:8px 10px;border:1.5px solid var(--cf-border);border-radius:4px;font-family:var(--sans);font-size:14px;outline:none">'
+    + '<input type="email" class="party-email" placeholder="email@example.com" style="padding:8px 10px;border:1.5px solid var(--cf-border);border-radius:4px;font-family:var(--sans);font-size:14px;outline:none">'
+    + '<button onclick="this.closest('.party-row').remove()" style="background:none;border:none;color:#aaa;font-size:20px;cursor:pointer;padding:0;line-height:1">&times;</button>';
   list.appendChild(row);
 }
 
@@ -393,10 +453,19 @@ function submitRSVP(){
   var roles = [];
   document.querySelectorAll(".rsvp-role:checked").forEach(function(cb){ roles.push(cb.value); });
 
-  // Collect party members
+  // Collect party members — combine name + relationship + email
   var members = [];
-  document.querySelectorAll("#rsvp-party-list .party-row input").forEach(function(inp){
-    if(inp.value.trim()) members.push(inp.value.trim());
+  document.querySelectorAll("#rsvp-party-list .party-row").forEach(function(row){
+    var nameEl  = row.querySelector(".party-name");
+    var relEl   = row.querySelector(".party-rel");
+    var emailEl = row.querySelector(".party-email");
+    var name    = nameEl  ? nameEl.value.trim()  : "";
+    var rel     = relEl   ? relEl.value.trim()   : "";
+    var email   = emailEl ? emailEl.value.trim() : "";
+    if(name){
+      var entry = name + (rel ? " (" + rel + ")" : "") + (email ? " [" + email + "]" : "");
+      members.push(entry);
+    }
   });
 
   btn.textContent = "Sending...";
@@ -413,7 +482,8 @@ function submitRSVP(){
     role:         roles.join(", "),
     partyMembers: members.join(" | "),
     totalInParty: total,
-    notes:        document.getElementById("rsvp-notes").value.trim()
+    notes:        document.getElementById("rsvp-notes").value.trim(),
+    listPermission: (document.querySelector('input[name="rsvp-permission"]:checked') || {value:"No"}).value
   };
 
   fetch(RSVP_WEBHOOK, {
@@ -444,8 +514,33 @@ function submitRSVP(){
     <div class="page-sub">Order your official Spiralpalooza commemorative shirt &mdash; designed by Durham illustrator and author <strong>Iris Gottlieb</strong>!</div>
     <div style="background:#fff;border:1.5px solid var(--cf-border);border-left:4px solid var(--cf-green);border-radius:4px;padding:1.25rem 1.5rem;margin-bottom:1.25rem;font-size:14px;line-height:1.7">
       <p style="margin-bottom:0.75rem">Durham-raised illustrator and author <strong>Iris Gottlieb</strong> is creating our Spiralpalooza commemorative shirts, which will include <strong>every Children First sign</strong>. Iris has been drawing over 200 signs that will create a design covering the front and back of the shirt.</p>
-      <p style="margin-bottom:0.75rem">Shirts will be printed in a pleasing color on <strong>off-white shirts</strong> in all kids&rsquo; and adult (unisex &amp; femme) sizes.</p>
-      <p>Admire Iris&rsquo;s work at <a href="https://www.irisgottlieb.com/" target="_blank" style="color:var(--cf-blue);font-weight:700">irisgottlieb.com</a></p>
+      <p style="margin-bottom:0.75rem">Admire Iris&rsquo;s work at <a href="https://www.irisgottlieb.com/" target="_blank" style="color:var(--cf-blue);font-weight:700">irisgottlieb.com</a></p>
+      <p style="margin-bottom:0.75rem">All shirts are <strong>Gildan Cotton T-shirts</strong>. Printed in a pleasing color on:</p>
+      <table style="width:100%;border-collapse:collapse;font-size:14px;margin-bottom:0.85rem">
+        <thead><tr style="background:var(--cf-blue);color:#fff">
+          <th style="text-align:left;padding:7px 12px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.4px">Style</th>
+          <th style="text-align:left;padding:7px 12px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.4px">Color</th>
+          <th style="text-align:left;padding:7px 12px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.4px">Price</th>
+        </tr></thead>
+        <tbody>
+          <tr style="border-bottom:1px solid var(--cf-border)">
+            <td style="padding:7px 12px">Adult Unisex</td>
+            <td style="padding:7px 12px">Natural</td>
+            <td style="padding:7px 12px;font-weight:700">$15</td>
+          </tr>
+          <tr style="border-bottom:1px solid var(--cf-border)">
+            <td style="padding:7px 12px">Adult Femme</td>
+            <td style="padding:7px 12px">Off-white</td>
+            <td style="padding:7px 12px;font-weight:700">$15</td>
+          </tr>
+          <tr>
+            <td style="padding:7px 12px">Youth</td>
+            <td style="padding:7px 12px">Natural</td>
+            <td style="padding:7px 12px;font-weight:700">$10</td>
+          </tr>
+        </tbody>
+      </table>
+      <p style="font-size:13px;color:var(--cf-muted);margin-bottom:0.5rem">Payment will be collected separately.</p>
     </div>
     <div style="margin-bottom:1.25rem">
       <div style="font-weight:700;font-size:14px;color:var(--cf-blue);margin-bottom:0.5rem;font-family:var(--sans)">A sample of Iris&rsquo;s illustration work:</div>
@@ -455,18 +550,8 @@ function submitRSVP(){
       <p style="font-size:12px;color:var(--cf-muted);margin-top:0.4rem;font-style:italic">Illustrations by Iris Gottlieb &mdash; <a href="https://www.irisgottlieb.com/objects" target="_blank" style="color:var(--cf-blue)">view full site</a></p>
     </div>
 
-    <div class="form-note green">&#10003; All orders are saved directly to Google Sheets. We&rsquo;ll be in touch about payment details after ordering.</div>
+    <div class="form-note green">&#10003; Use this form to place your order. We&rsquo;ll be in touch about payment details after ordering.</div>
 
-    <div style="background:#fff;border:1.5px solid var(--cf-border);border-left:4px solid var(--cf-orange);border-radius:4px;padding:1rem 1.25rem;font-size:14px;margin-bottom:1rem;line-height:1.7">
-      <div style="font-weight:700;margin-bottom:0.5rem;color:var(--cf-blue)">Pricing</div>
-      <div style="display:flex;gap:2rem;flex-wrap:wrap;margin-bottom:0.5rem">
-        <span>&#129306; <strong>Youth shirts</strong> &mdash; $10</span>
-        <span>&#128085; <strong>Adult Unisex &amp; Femme</strong> &mdash; $15</span>
-      </div>
-      <div style="font-size:13px;color:var(--cf-muted)">Payment will be collected separately &mdash; this form just captures your order.</div>
-    </div>
-
-    <!-- Pricing -->
     <!-- Custom shirt order UI -->
     <div id="shirt-form-ui">
       <div id="shirt-success-msg" style="display:none;background:#eaf4ee;border:1px solid #a8d9b5;border-radius:4px;padding:1rem 1.25rem;color:#2e6b40;font-size:14px;margin-bottom:1rem;line-height:1.6">
@@ -636,8 +721,6 @@ function submitShirtOrder(){
     </div>
 
     <div id="vol-form-ui">
-      <p style="font-size:14px;color:var(--cf-muted);margin-bottom:1.25rem;line-height:1.6">We have indicated our best guess about the essential number of volunteers for each task &mdash; but we are happy to have more, or to have you buddy up with a partner!</p>
-
       <!-- Role cards -->
       <div style="background:#fff;border:1.5px solid var(--cf-border);border-radius:6px;overflow:hidden;margin-bottom:1rem">
         <div style="background:var(--cf-orange);color:#fff;padding:8px 14px;font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px">Select Your Volunteer Roles</div>
@@ -685,47 +768,47 @@ function submitShirtOrder(){
             </label>
             <label class="vol-role-card" style="display:flex;align-items:flex-start;gap:10px;padding:10px 12px;border:1.5px solid var(--cf-border);border-radius:4px;cursor:pointer;background:#fafaf8;transition:all 0.15s">
               <input type="checkbox" value="Check-In & Shirts" style="margin-top:3px;flex-shrink:0;accent-color:var(--cf-orange)">
-              <div><div style="font-weight:700;font-size:13px;color:var(--cf-text)">Check-In &amp; Shirts</div><div style="font-size:11px;color:var(--cf-muted);margin-top:2px">Welcome guests and hand out shirts (4pm&ndash;Magic Circle and after)</div></div>
+              <div><div style="font-weight:700;font-size:13px;color:var(--cf-text)">Check-In &amp; Shirts</div><div style="font-size:11px;color:var(--cf-muted);margin-top:2px">One hour shift &mdash; welcome guests and hand out shirts</div></div>
             </label>
             <label class="vol-role-card" style="display:flex;align-items:flex-start;gap:10px;padding:10px 12px;border:1.5px solid var(--cf-border);border-radius:4px;cursor:pointer;background:#fafaf8;transition:all 0.15s">
               <input type="checkbox" value="Memory Pages / Studio" style="margin-top:3px;flex-shrink:0;accent-color:var(--cf-orange)">
-              <div><div style="font-weight:700;font-size:13px;color:var(--cf-text)">Memory Pages / Studio</div><div style="font-size:11px;color:var(--cf-muted);margin-top:2px">Support guests making Spiralpalooza Portfolio pages</div></div>
+              <div><div style="font-weight:700;font-size:13px;color:var(--cf-text)">Memory Pages / Studio</div><div style="font-size:11px;color:var(--cf-muted);margin-top:2px">One hour shift &mdash; support guests making Portfolio pages in the Studio</div></div>
             </label>
             <label class="vol-role-card" style="display:flex;align-items:flex-start;gap:10px;padding:10px 12px;border:1.5px solid var(--cf-border);border-radius:4px;cursor:pointer;background:#fafaf8;transition:all 0.15s">
               <input type="checkbox" value="Slide Show in Loft Room" style="margin-top:3px;flex-shrink:0;accent-color:var(--cf-orange)">
-              <div><div style="font-weight:700;font-size:13px;color:var(--cf-text)">Slide Show in Loft Room</div><div style="font-size:11px;color:var(--cf-muted);margin-top:2px">Run the slide show display throughout the party</div></div>
+              <div><div style="font-weight:700;font-size:13px;color:var(--cf-text)">Slide Show in Loft Room</div><div style="font-size:11px;color:var(--cf-muted);margin-top:2px">One hour shift &mdash; run the slide show in the loft room</div></div>
             </label>
             <label class="vol-role-card" style="display:flex;align-items:flex-start;gap:10px;padding:10px 12px;border:1.5px solid var(--cf-border);border-radius:4px;cursor:pointer;background:#fafaf8;transition:all 0.15s">
               <input type="checkbox" value="Library / Creation Station" style="margin-top:3px;flex-shrink:0;accent-color:var(--cf-orange)">
-              <div><div style="font-weight:700;font-size:13px;color:var(--cf-text)">Library / Creation Station</div><div style="font-size:11px;color:var(--cf-muted);margin-top:2px">Support guests at the library and creation station</div></div>
+              <div><div style="font-weight:700;font-size:13px;color:var(--cf-text)">Library / Creation Station</div><div style="font-size:11px;color:var(--cf-muted);margin-top:2px">One hour shift &mdash; support guests at the library and creation station</div></div>
             </label>
             <label class="vol-role-card" style="display:flex;align-items:flex-start;gap:10px;padding:10px 12px;border:1.5px solid var(--cf-border);border-radius:4px;cursor:pointer;background:#fafaf8;transition:all 0.15s">
               <input type="checkbox" value="Street Play" style="margin-top:3px;flex-shrink:0;accent-color:var(--cf-orange)">
-              <div><div style="font-weight:700;font-size:13px;color:var(--cf-text)">Street Play</div><div style="font-size:11px;color:var(--cf-muted);margin-top:2px">Supervise the closed street &mdash; trikes, balls, and wild happy play!</div></div>
+              <div><div style="font-weight:700;font-size:13px;color:var(--cf-text)">Street Play</div><div style="font-size:11px;color:var(--cf-muted);margin-top:2px">One hour shift &mdash; supervise the closed street (trikes, balls, and wild happy play!)</div></div>
             </label>
             <label class="vol-role-card" style="display:flex;align-items:flex-start;gap:10px;padding:10px 12px;border:1.5px solid var(--cf-border);border-radius:4px;cursor:pointer;background:#fafaf8;transition:all 0.15s">
               <input type="checkbox" value="Food & Drinks" style="margin-top:3px;flex-shrink:0;accent-color:var(--cf-orange)">
-              <div><div style="font-weight:700;font-size:13px;color:var(--cf-text)">Food &amp; Drinks</div><div style="font-size:11px;color:var(--cf-muted);margin-top:2px">Wine, beer, seltzers, finger food, pizza &amp; dessert coordination</div></div>
+              <div><div style="font-weight:700;font-size:13px;color:var(--cf-text)">Food &amp; Drinks</div><div style="font-size:11px;color:var(--cf-muted);margin-top:2px">One hour shift &mdash; food &amp; drinks coordination</div></div>
             </label>
             <label class="vol-role-card" style="display:flex;align-items:flex-start;gap:10px;padding:10px 12px;border:1.5px solid var(--cf-border);border-radius:4px;cursor:pointer;background:#fafaf8;transition:all 0.15s">
               <input type="checkbox" value="Sound System / Magic Circle" style="margin-top:3px;flex-shrink:0;accent-color:var(--cf-orange)">
-              <div><div style="font-weight:700;font-size:13px;color:var(--cf-text)">Sound System / Magic Circle</div><div style="font-size:11px;color:var(--cf-muted);margin-top:2px">Run the sound system for the Magic Circle gathering</div></div>
+              <div><div style="font-weight:700;font-size:13px;color:var(--cf-text)">Sound System / Magic Circle</div><div style="font-size:11px;color:var(--cf-muted);margin-top:2px">One hour shift &mdash; run the sound system for the Magic Circle</div></div>
             </label>
             <label class="vol-role-card" style="display:flex;align-items:flex-start;gap:10px;padding:10px 12px;border:1.5px solid var(--cf-border);border-radius:4px;cursor:pointer;background:#fafaf8;transition:all 0.15s">
               <input type="checkbox" value="Bike Deck DJ" style="margin-top:3px;flex-shrink:0;accent-color:var(--cf-orange)">
-              <div><div style="font-weight:700;font-size:13px;color:var(--cf-text)">Bike Deck DJ</div><div style="font-size:11px;color:var(--cf-muted);margin-top:2px">Keep the music going before and after Magic Circle</div></div>
+              <div><div style="font-weight:700;font-size:13px;color:var(--cf-text)">Bike Deck DJ</div><div style="font-size:11px;color:var(--cf-muted);margin-top:2px">One hour shift &mdash; keep the music going on the bike deck</div></div>
             </label>
             <label class="vol-role-card" style="display:flex;align-items:flex-start;gap:10px;padding:10px 12px;border:1.5px solid var(--cf-border);border-radius:4px;cursor:pointer;background:#fafaf8;transition:all 0.15s">
               <input type="checkbox" value="Photography" style="margin-top:3px;flex-shrink:0;accent-color:var(--cf-orange)">
-              <div><div style="font-weight:700;font-size:13px;color:var(--cf-text)">Photography</div><div style="font-size:11px;color:var(--cf-muted);margin-top:2px">Capture the day (2 photographers needed)</div></div>
+              <div><div style="font-weight:700;font-size:13px;color:var(--cf-text)">Photography</div><div style="font-size:11px;color:var(--cf-muted);margin-top:2px">One hour shift &mdash; photography (2 photographers needed)</div></div>
             </label>
             <label class="vol-role-card" style="display:flex;align-items:flex-start;gap:10px;padding:10px 12px;border:1.5px solid var(--cf-border);border-radius:4px;cursor:pointer;background:#fafaf8;transition:all 0.15s">
               <input type="checkbox" value="Video" style="margin-top:3px;flex-shrink:0;accent-color:var(--cf-orange)">
-              <div><div style="font-weight:700;font-size:13px;color:var(--cf-text)">Video</div><div style="font-size:11px;color:var(--cf-muted);margin-top:2px">Document the event on video (2 videographers needed)</div></div>
+              <div><div style="font-weight:700;font-size:13px;color:var(--cf-text)">Video</div><div style="font-size:11px;color:var(--cf-muted);margin-top:2px">One hour shift &mdash; video documentation (2 videographers needed)</div></div>
             </label>
             <label class="vol-role-card" style="display:flex;align-items:flex-start;gap:10px;padding:10px 12px;border:1.5px solid var(--cf-border);border-radius:4px;cursor:pointer;background:#fafaf8;transition:all 0.15s">
               <input type="checkbox" value="Saturday Night Cleanup" style="margin-top:3px;flex-shrink:0;accent-color:var(--cf-orange)">
-              <div><div style="font-weight:700;font-size:13px;color:var(--cf-text)">Saturday Night Cleanup</div><div style="font-size:11px;color:var(--cf-muted);margin-top:2px">Baseline clean-up Saturday night (10 people needed)</div></div>
+              <div><div style="font-weight:700;font-size:13px;color:var(--cf-text)">Saturday Night Cleanup</div><div style="font-size:11px;color:var(--cf-muted);margin-top:2px">One hour shift &mdash; baseline clean-up Saturday night</div></div>
             </label>
 
             <label class="vol-role-card" style="display:flex;align-items:flex-start;gap:10px;padding:10px 12px;border:1.5px solid var(--cf-border);border-radius:4px;cursor:pointer;background:#fafaf8;transition:all 0.15s">
@@ -783,6 +866,41 @@ function submitShirtOrder(){
 
       <button onclick="submitVolunteer()" id="vol-submit-btn" style="background:var(--cf-orange);color:#fff;border:none;padding:11px 28px;border-radius:4px;font-family:var(--sans);font-size:14px;font-weight:700;cursor:pointer;transition:background 0.15s">Sign Up to Volunteer &rarr;</button>
       <p style="font-size:12px;color:var(--cf-muted);margin-top:0.75rem;font-style:italic">&#10003; Your sign-up goes directly to our volunteer coordinator.</p>
+    </div>
+  </div>
+</section>
+
+<section id="whocoming">
+  <div class="wrap">
+    <div class="page-title">Who&rsquo;s Coming</div>
+    <div class="page-sub">A running list of Spiralpalooza attendees who have given us permission to share their names. We can&rsquo;t wait to see everyone!</div>
+
+    <div id="whocoming-loading" style="text-align:center;padding:2rem;color:var(--cf-muted);font-style:italic;font-size:14px">
+      Loading guest list&hellip;
+    </div>
+
+    <div id="whocoming-empty" style="display:none;background:#fff;border:1.5px solid var(--cf-border);border-radius:6px;padding:2rem;text-align:center;color:var(--cf-muted);font-size:14px;font-style:italic">
+      No RSVPs yet &mdash; be the first! <a onclick="show('rsvp',null)" href="#rsvp" style="color:var(--cf-blue);font-weight:700;cursor:pointer">RSVP now &rarr;</a>
+    </div>
+
+    <div id="whocoming-list" style="display:none">
+      <div id="whocoming-count" style="font-size:14px;color:var(--cf-muted);margin-bottom:1rem;font-style:italic"></div>
+      <div style="background:#fff;border:1.5px solid var(--cf-border);border-radius:6px;overflow:hidden">
+        <table style="width:100%;border-collapse:collapse;font-size:14px">
+          <thead>
+            <tr style="background:var(--cf-blue);color:#fff">
+              <th style="text-align:left;padding:10px 16px;font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px">Name</th>
+              <th style="text-align:left;padding:10px 16px;font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px">Years at Children First</th>
+            </tr>
+          </thead>
+          <tbody id="whocoming-tbody"></tbody>
+        </table>
+      </div>
+      <p style="font-size:12px;color:var(--cf-muted);margin-top:0.75rem;font-style:italic">Only names of guests who gave permission to be listed are shown. <a onclick="show('rsvp',null)" style="color:var(--cf-blue);cursor:pointer;text-decoration:underline">Haven&rsquo;t RSVPed yet? Join us!</a></p>
+    </div>
+
+    <div id="whocoming-error" style="display:none;background:#fde8e8;border:1px solid #e0b0b0;border-radius:4px;padding:0.85rem 1rem;font-size:13px;color:#a32d2d;margin-top:1rem">
+      Couldn&rsquo;t load the guest list right now. Please try again in a moment.
     </div>
   </div>
 </section>
@@ -884,13 +1002,98 @@ function move(dir){go((ci+dir+sl.length)%sl.length)}
 setInterval(()=>move(1),5200);
 
 // Navigation
-function show(id,el){
+function loadWhoComing(){
+  var loading = document.getElementById("whocoming-loading");
+  var empty   = document.getElementById("whocoming-empty");
+  var list    = document.getElementById("whocoming-list");
+  var error   = document.getElementById("whocoming-error");
+  var tbody   = document.getElementById("whocoming-tbody");
+  var count   = document.getElementById("whocoming-count");
+
+  loading.style.display = "block";
+  empty.style.display   = "none";
+  list.style.display    = "none";
+  error.style.display   = "none";
+
+  fetch("https://script.google.com/macros/s/AKfycbyHcxH8l-TTgJTN9kYGGjjTFqhR2VMiIZbCD6c42NtDghRXi0G6yKn7T_HDQLmoyZ1a/exec", {method:"GET"})
+  .then(function(r){ return r.json(); })
+  .then(function(data){
+    loading.style.display = "none";
+    if(!data.rsvps || data.rsvps.length === 0){
+      empty.style.display = "block";
+      return;
+    }
+    // Sort alphabetically by last name
+    data.rsvps.sort(function(a,b){ return a.name.localeCompare(b.name); });
+    tbody.innerHTML = data.rsvps.map(function(r, i){
+      var bg = i % 2 === 0 ? "#fff" : "#fafaf8";
+      return "<tr style='background:"+bg+";border-bottom:1px solid #f0ede8'>" +
+        "<td style='padding:9px 16px;color:var(--cf-text);font-weight:500'>" + r.name + "</td>" +
+        "<td style='padding:9px 16px;color:var(--cf-muted)'>" + (r.years || "&mdash;") + "</td>" +
+        "</tr>";
+    }).join("");
+    var total = data.rsvps.length;
+    count.textContent = total + " " + (total === 1 ? "person" : "people") + " coming so far!";
+    list.style.display = "block";
+  })
+  .catch(function(){
+    loading.style.display = "none";
+    error.style.display   = "block";
+  });
+}
+
+function show(id,el,pushState){
   document.querySelectorAll('section').forEach(s=>s.classList.remove('active'));
   document.getElementById(id).classList.add('active');
+  if(id === 'whocoming') loadWhoComing();
   document.querySelectorAll('.nav-links a').forEach(a=>a.classList.remove('active'));
+  // highlight correct nav link
+  document.querySelectorAll('.nav-links a').forEach(function(a){
+    if(a.getAttribute('onclick') && a.getAttribute('onclick').includes("'"+id+"'")){
+      a.classList.add('active');
+    }
+  });
   if(el)el.classList.add('active');
   window.scrollTo(0,0);
+  // push browser history so back button works
+  if(pushState !== false){
+    history.pushState({page:id}, '', '#'+id);
+  }
 }
+
+function toggleMenu(){
+  var nav = document.getElementById("nav-links");
+  nav.classList.toggle("open");
+}
+function closeMenu(){
+  document.getElementById("nav-links").classList.remove("open");
+}
+// Close menu when clicking outside
+document.addEventListener("click", function(e){
+  var nav = document.getElementById("nav-links");
+  var btn = document.querySelector(".hamburger");
+  if(nav.classList.contains("open") && !nav.contains(e.target) && !btn.contains(e.target)){
+    nav.classList.remove("open");
+  }
+});
+
+// Handle browser back/forward buttons
+window.addEventListener('popstate', function(e){
+  var id = (e.state && e.state.page) ? e.state.page : 'home';
+  show(id, null, false);
+});
+
+// On first load, check for hash in URL
+(function(){
+  var hash = window.location.hash.replace('#','');
+  var valid = ['home','rsvp','shirts','volunteer','whocoming'];
+  if(hash && valid.indexOf(hash) > -1){
+    show(hash, null, false);
+  } else {
+    // Set initial history state for home
+    history.replaceState({page:'home'}, '', '#home');
+  }
+})();
 
 // Toggle embedded form
 function toggleEmbed(id){
