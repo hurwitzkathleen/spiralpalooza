@@ -1026,6 +1026,10 @@ function go(i){
 function move(dir){go((ci+dir+sl.length)%sl.length)}
 setInterval(()=>move(1),8000);
 
+// Default "Who's Coming" layout: "grouped" (party members indented under host) or "flat"
+// (every guest as their own row). Override per-visit with ?wc=flat or ?wc=grouped in the URL.
+var WHOCOMING_DEFAULT_STYLE = "grouped";
+
 // Navigation
 function loadWhoComing(){
   var loading = document.getElementById("whocoming-loading");
@@ -1044,21 +1048,54 @@ function loadWhoComing(){
   .then(function(r){ return r.json(); })
   .then(function(data){
     loading.style.display = "none";
-    if(!data.rsvps || data.rsvps.length === 0){
-      empty.style.display = "block";
-      return;
+
+    // Pick render style: ?wc=flat or ?wc=grouped in the URL overrides the default below.
+    // To permanently switch the live site, change WHOCOMING_DEFAULT_STYLE.
+    var style = (new URLSearchParams(window.location.search).get("wc") || WHOCOMING_DEFAULT_STYLE);
+    // "grouped" needs the new script (data.grouped); fall back to flat if it isn't there yet.
+    if(style === "grouped" && !data.grouped) style = "flat";
+
+    var rows = "";
+    var total = 0;
+
+    if(style === "grouped"){
+      var grouped = data.grouped || [];
+      if(grouped.length === 0){ empty.style.display = "block"; return; }
+      // Sort alphabetically by host name; party members stay grouped under their host
+      grouped.sort(function(a,b){ return a.name.localeCompare(b.name); });
+      grouped.forEach(function(r, i){
+        var bg = i % 2 === 0 ? "#fff" : "#fafaf8";
+        rows += "<tr style='background:"+bg+";border-bottom:1px solid #f0ede8'>" +
+          "<td style='padding:9px 16px;color:var(--cf-text);font-weight:500'>" + r.name + "</td>" +
+          "<td style='padding:9px 16px;color:var(--cf-muted)'>" + (r.years || "&mdash;") + "</td>" +
+          "<td style='padding:9px 16px;color:var(--cf-text);font-style:italic'>" + (r.note || "") + "</td>" +
+          "</tr>";
+        total += 1;
+        (r.party || []).forEach(function(member){
+          rows += "<tr style='background:"+bg+";border-bottom:1px solid #f0ede8'>" +
+            "<td style='padding:5px 16px 5px 34px;color:var(--cf-muted)'>&#8627; " + member + "</td>" +
+            "<td></td><td></td>" +
+            "</tr>";
+          total += 1;
+        });
+      });
+    } else {
+      // Flat style: every guest (host or party member) is its own alphabetical row.
+      var flat = data.rsvps || [];
+      if(flat.length === 0){ empty.style.display = "block"; return; }
+      flat.sort(function(a,b){ return a.name.localeCompare(b.name); });
+      flat.forEach(function(r, i){
+        var bg = i % 2 === 0 ? "#fff" : "#fafaf8";
+        rows += "<tr style='background:"+bg+";border-bottom:1px solid #f0ede8'>" +
+          "<td style='padding:9px 16px;color:var(--cf-text);font-weight:500'>" + r.name + "</td>" +
+          "<td style='padding:9px 16px;color:var(--cf-muted)'>" + (r.years || "&mdash;") + "</td>" +
+          "<td style='padding:9px 16px;color:var(--cf-text);font-style:italic'>" + (r.note || "") + "</td>" +
+          "</tr>";
+        total += 1;
+      });
     }
-    // Sort alphabetically by last name
-    data.rsvps.sort(function(a,b){ return a.name.localeCompare(b.name); });
-    tbody.innerHTML = data.rsvps.map(function(r, i){
-      var bg = i % 2 === 0 ? "#fff" : "#fafaf8";
-      return "<tr style='background:"+bg+";border-bottom:1px solid #f0ede8'>" +
-        "<td style='padding:9px 16px;color:var(--cf-text);font-weight:500'>" + r.name + "</td>" +
-        "<td style='padding:9px 16px;color:var(--cf-muted)'>" + (r.years || "&mdash;") + "</td>" +
-        "<td style='padding:9px 16px;color:var(--cf-text);font-style:italic'>" + (r.note || "") + "</td>" +
-        "</tr>";
-    }).join("");
-    var total = data.rsvps.length;
+
+    tbody.innerHTML = rows;
     count.textContent = total + " " + (total === 1 ? "person" : "people") + " coming so far!";
     list.style.display = "block";
   })
