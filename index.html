@@ -379,9 +379,21 @@ section{display:none}section.active{display:block}
             </div>
           </div>
           <button onclick="addPartyMember()" style="background:none;border:none;color:var(--cf-blue);font-family:var(--sans);font-size:13px;font-weight:700;cursor:pointer;padding:4px 0;margin-top:4px">+ Add another person</button>
-          <div style="margin-top:0.85rem">
-            <label style="display:block;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;color:var(--cf-muted);margin-bottom:5px">Total number of people in your party (including yourself) *</label>
-            <input type="number" id="rsvp-total" placeholder="e.g. 4" min="1" style="width:100px;padding:8px 10px;border:1.5px solid var(--cf-border);border-radius:4px;font-family:var(--sans);font-size:14px;outline:none">
+        </div>
+      </div>
+
+      <!-- Pizza dinner -->
+      <div style="background:#fff;border:1.5px solid var(--cf-border);border-radius:6px;overflow:hidden;margin-bottom:1rem">
+        <div style="background:var(--cf-blue);color:#fff;padding:8px 14px;font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px">Pizza Dinner</div>
+        <div style="padding:1rem 1.25rem">
+          <p style="font-size:13px;color:var(--cf-muted);margin-bottom:0.85rem;font-style:italic">We&rsquo;re planning to order pizza for the party! Most of it will be regular pizza, but let us know how many people in your party need special-order pies so we can get the counts right. Leave these at 0 if none apply.</p>
+          <div style="display:grid;grid-template-columns:1fr auto;gap:10px 1rem;align-items:center;max-width:440px">
+            <label for="rsvp-pizza-gf" style="font-size:14px;color:var(--cf-text)">Gluten-free pizza eaters</label>
+            <input type="number" id="rsvp-pizza-gf" min="0" value="0" style="width:80px;padding:8px 10px;border:1.5px solid var(--cf-border);border-radius:4px;font-family:var(--sans);font-size:14px;outline:none">
+            <label for="rsvp-pizza-vegan" style="font-size:14px;color:var(--cf-text)">Vegan pizza eaters</label>
+            <input type="number" id="rsvp-pizza-vegan" min="0" value="0" style="width:80px;padding:8px 10px;border:1.5px solid var(--cf-border);border-radius:4px;font-family:var(--sans);font-size:14px;outline:none">
+            <label for="rsvp-pizza-gfvegan" style="font-size:14px;color:var(--cf-text)">Gluten-free + vegan pizza eaters</label>
+            <input type="number" id="rsvp-pizza-gfvegan" min="0" value="0" style="width:80px;padding:8px 10px;border:1.5px solid var(--cf-border);border-radius:4px;font-family:var(--sans);font-size:14px;outline:none">
           </div>
         </div>
       </div>
@@ -447,7 +459,6 @@ function submitRSVP(){
   var lname = document.getElementById("rsvp-lname").value.trim();
   var email = document.getElementById("rsvp-email").value.trim();
   var years = document.getElementById("rsvp-years").value.trim();
-  var total = document.getElementById("rsvp-total").value.trim();
   var errEl = document.getElementById("rsvp-error");
   var btn   = document.getElementById("rsvp-submit-btn");
 
@@ -461,10 +472,6 @@ function submitRSVP(){
   }
   if(!years){
     errEl.textContent = "Please enter your years affiliated with Children First.";
-    errEl.style.display = "block"; return;
-  }
-  if(!total){
-    errEl.textContent = "Please enter the total number of people in your party.";
     errEl.style.display = "block"; return;
   }
   errEl.style.display = "none";
@@ -488,6 +495,11 @@ function submitRSVP(){
     }
   });
 
+  // Party total is the registrant plus everyone they listed.
+  var total = members.length + 1;
+
+  function pizzaCount(id){ return parseInt(document.getElementById(id).value, 10) || 0; }
+
   btn.textContent = "Sending...";
   btn.disabled = true;
   btn.style.opacity = "0.7";
@@ -502,6 +514,9 @@ function submitRSVP(){
     role:         roles.join(", "),
     partyMembers: members.join(" | "),
     totalInParty: total,
+    pizzaGF:       pizzaCount("rsvp-pizza-gf"),
+    pizzaVegan:    pizzaCount("rsvp-pizza-vegan"),
+    pizzaGFVegan:  pizzaCount("rsvp-pizza-gfvegan"),
     notesPrivate: document.getElementById("rsvp-notes-private").value.trim(),
     notesPublic:  document.getElementById("rsvp-notes-public").value.trim(),
     listPermission: (document.querySelector('input[name="rsvp-permission"]:checked') || {value:"No"}).value
