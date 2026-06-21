@@ -379,10 +379,7 @@ section{display:none}section.active{display:block}
             </div>
           </div>
           <button onclick="addPartyMember()" style="background:none;border:none;color:var(--cf-blue);font-family:var(--sans);font-size:13px;font-weight:700;cursor:pointer;padding:4px 0;margin-top:4px">+ Add another person</button>
-          <div style="margin-top:0.85rem">
-            <label style="display:block;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;color:var(--cf-muted);margin-bottom:5px">Total number of people in your party (including yourself) *</label>
-            <input type="number" id="rsvp-total" placeholder="e.g. 4" min="1" style="width:100px;padding:8px 10px;border:1.5px solid var(--cf-border);border-radius:4px;font-family:var(--sans);font-size:14px;outline:none">
-          </div>
+
         </div>
       </div>
 
@@ -459,10 +456,7 @@ function submitRSVP(){
     errEl.textContent = "Please enter your years affiliated with Children First.";
     errEl.style.display = "block"; return;
   }
-  if(!total){
-    errEl.textContent = "Please enter the total number of people in your party.";
-    errEl.style.display = "block"; return;
-  }
+
   errEl.style.display = "none";
 
   // Collect roles
@@ -497,7 +491,6 @@ function submitRSVP(){
     years:        years,
     role:         roles.join(", "),
     partyMembers: members.join(" | "),
-    totalInParty: total,
     notes:        document.getElementById("rsvp-notes").value.trim(),
     listPermission: (document.querySelector('input[name="rsvp-permission"]:checked') || {value:"No"}).value
   };
