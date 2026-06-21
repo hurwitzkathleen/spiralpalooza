@@ -573,10 +573,6 @@ function submitRSVP(){
 
     <!-- Custom shirt order UI -->
     <div id="shirt-form-ui">
-      <div id="shirt-success-msg" style="display:none;background:#eaf4ee;border:1px solid #a8d9b5;border-radius:4px;padding:1rem 1.25rem;color:#2e6b40;font-size:14px;margin-bottom:1rem;line-height:1.6">
-        &#10003; <strong>Order received!</strong> We&rsquo;ll be in touch about payment soon. Thank you! If you need to change or add to your order, just submit this form again and add a note, or email <a href="mailto:childrenfirstmail@gmail.com" style="color:#2e6b40">childrenfirstmail@gmail.com</a>.
-      </div>
-
       <div style="background:#fff;border:1.5px solid var(--cf-border);border-radius:6px;overflow:hidden;margin-bottom:1rem">
 
         <!-- Name & Email -->
@@ -614,7 +610,11 @@ function submitRSVP(){
 
       <div id="shirt-error" style="display:none;color:#a32d2d;font-size:13px;margin-bottom:0.75rem;padding:0.5rem 0.75rem;background:#fde8e8;border-radius:4px"></div>
 
-      <button onclick="submitShirtOrder()" style="background:var(--cf-green);color:#fff;border:none;padding:11px 28px;border-radius:4px;font-family:var(--sans);font-size:14px;font-weight:700;cursor:pointer;transition:background 0.15s">Place Order &rarr;</button>
+      <button onclick="submitShirtOrder()" id="shirt-submit-btn" style="background:var(--cf-green);color:#fff;border:none;padding:11px 28px;border-radius:4px;font-family:var(--sans);font-size:14px;font-weight:700;cursor:pointer;transition:background 0.15s">Place Order &rarr;</button>
+
+      <div id="shirt-success-msg" style="display:none;background:#eaf4ee;border:1px solid #a8d9b5;border-radius:4px;padding:1rem 1.25rem;color:#2e6b40;font-size:14px;margin-top:1rem;line-height:1.6">
+        &#10003; <strong>Order received!</strong> We&rsquo;ll be in touch about payment soon. Thank you! If you need to change or add to your order, just submit this form again and add a note, or email <a href="mailto:childrenfirstmail@gmail.com" style="color:#2e6b40">childrenfirstmail@gmail.com</a>.
+      </div>
     </div>
 
     <!-- Hidden iframe for form submission -->
