@@ -14,8 +14,7 @@
  *   doPost  — append a new volunteer signup
  *
  * Sheet headers (row 1, created on first write):
- *   Timestamp | Name | Email | Phone | Volunteer Roles | Availability |
- *   CF Connection | Notes
+ *   Timestamp | Name | Email | Phone | Volunteer Roles | Availability | Notes
  */
 function doPost(e) {
   try {
@@ -33,10 +32,9 @@ function doPost(e) {
         "Phone",
         "Volunteer Roles",
         "Availability",
-        "CF Connection",
         "Notes"
       ]);
-      sheet.getRange(1, 1, 1, 8).setFontWeight("bold");
+      sheet.getRange(1, 1, 1, 7).setFontWeight("bold");
       sheet.setFrozenRows(1);
     }
 
@@ -47,7 +45,6 @@ function doPost(e) {
       data.phone        || "",
       data.roles        || "",
       data.availability || "",
-      data.connection   || "",
       data.notes        || ""
     ]);
 

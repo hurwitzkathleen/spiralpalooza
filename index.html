@@ -1044,10 +1044,6 @@ function populateShirtForm(r){
             </div>
 
           </div>
-          <div style="margin-bottom:0.85rem">
-            <label style="display:block;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;color:var(--cf-muted);margin-bottom:5px">Your connection to Children First</label>
-            <input type="text" id="vol-connection" placeholder="e.g. Parent 2016–2020, Teacher, Friend of family" style="width:100%;padding:8px 10px;border:1.5px solid var(--cf-border);border-radius:4px;font-family:var(--sans);font-size:14px;outline:none">
-          </div>
           <div>
             <label style="display:block;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;color:var(--cf-muted);margin-bottom:5px">Anything else we should know?</label>
             <textarea id="vol-notes" placeholder="Skills, questions, ideas..." style="width:100%;padding:8px 10px;border:1.5px solid var(--cf-border);border-radius:4px;font-family:var(--sans);font-size:14px;outline:none;resize:vertical;min-height:60px"></textarea>
@@ -1150,7 +1146,6 @@ function submitVolunteer(){
     email:        email,
     phone:        document.getElementById("vol-phone").value.trim(),
     roles:        roles.join(", "),
-    connection:   document.getElementById("vol-connection").value.trim(),
     notes:        document.getElementById("vol-notes").value.trim()
   };
 
