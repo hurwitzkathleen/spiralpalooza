@@ -32,6 +32,16 @@ var RSVP_SHEET_NAME = 'RSVPs';
 // Live site base URL, must end with '/'. Used to build the edit link in emails.
 var SITE_URL = 'https://spiralpalooza.org/';
 
+// Canonical header row, in order. ensureHeaders_ uses this to create the sheet or
+// to backfill any missing columns (e.g. Edit Token / Last Updated on a sheet from
+// before the edit-link feature). The tests also build their sheet from this.
+var RSVP_HEADERS = [
+  'Timestamp', 'First Name', 'Last Name', 'Email', 'Phone', 'Mailing Address',
+  'Years at Children First', 'Attending', 'Role / Affiliation', 'Party Members',
+  'Total in Party', 'List Permission', 'Private Notes', 'Public Notes',
+  'Pizza GF', 'Pizza Vegan', 'Pizza GF+Vegan', 'Edit Token', 'Last Updated'
+];
+
 // ---- Write path (doPost) ---------------------------------------------------
 
 function doPost(e) {
@@ -47,7 +57,10 @@ function doPost(e) {
         .setMimeType(ContentService.MimeType.JSON);
     }
 
-    var sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(RSVP_SHEET_NAME);
+    var ss = SpreadsheetApp.getActiveSpreadsheet();
+    var sheet = ss.getSheetByName(RSVP_SHEET_NAME) || ss.insertSheet(RSVP_SHEET_NAME);
+    ensureHeaders_(sheet);
+
     var saved = saveRsvp_(sheet, data);
 
     sendEmail_(data, saved.token, saved.isUpdate);
@@ -118,6 +131,26 @@ function validateRsvp_(data) {
   if (!email || email.indexOf('@') === -1)  return 'A valid email is required.';
   if (!String(data.years || '').trim())     return 'Years at Children First is required.';
   return '';
+}
+
+// Create the sheet's header row if it's empty, or backfill any missing headers
+// (Edit Token / Last Updated may not exist on a sheet from before the edit-link
+// feature). Existing columns and their order are left untouched; new headers are
+// appended at the end, and existing data rows just get blank cells under them.
+function ensureHeaders_(sheet) {
+  if (sheet.getLastRow() === 0) {
+    sheet.appendRow(RSVP_HEADERS);
+    sheet.getRange(1, 1, 1, RSVP_HEADERS.length).setFontWeight('bold');
+    sheet.setFrozenRows(1);
+    return;
+  }
+  var headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0]
+    .map(function (h) { return String(h).trim(); });
+  var missing = RSVP_HEADERS.filter(function (h) { return headers.indexOf(h) === -1; });
+  if (missing.length) {
+    var start = headers.length + 1;
+    sheet.getRange(1, start, 1, missing.length).setValues([missing]).setFontWeight('bold');
+  }
 }
 
 // Append a row by matching the values object's keys to the sheet's header row.
@@ -435,13 +468,8 @@ function testSendEmail() {
 
 var TEST_SHEET_NAME = 'RSVP_TEST';
 
-// Production header row, used to build the test sheet.
-var RSVP_HEADERS = [
-  'Timestamp', 'First Name', 'Last Name', 'Email', 'Phone', 'Mailing Address',
-  'Years at Children First', 'Attending', 'Role / Affiliation', 'Party Members',
-  'Total in Party', 'List Permission', 'Private Notes', 'Public Notes',
-  'Pizza GF', 'Pizza Vegan', 'Pizza GF+Vegan', 'Edit Token', 'Last Updated'
-];
+// RSVP_HEADERS (the production header row the tests build their sheet from) now
+// lives in the Config section at the top, since ensureHeaders_ uses it too.
 
 // ---- Tiny assert + sheet helpers -------------------------------------------
 
@@ -693,6 +721,24 @@ function testDoGet_excludesRegrets_() {
   }
 }
 
+function testEnsureHeadersBackfill_() {
+  Logger.log('testEnsureHeadersBackfill_');
+  // Simulate an older sheet that predates the edit-link columns.
+  var oldHeaders = RSVP_HEADERS.filter(function (h) {
+    return h !== 'Edit Token' && h !== 'Last Updated';
+  });
+  var sheet = makeTestSheet_(oldHeaders);
+
+  ensureHeaders_(sheet);
+  var headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0]
+    .map(function (h) { return String(h).trim(); });
+
+  assertTruthy_('Edit Token backfilled', headers.indexOf('Edit Token') > -1);
+  assertTruthy_('Last Updated backfilled', headers.indexOf('Last Updated') > -1);
+  // Existing columns are untouched.
+  assertEquals_('First Name still col 2', 'First Name', headers[1]);
+}
+
 function testValidateRsvp_() {
   Logger.log('testValidateRsvp_');
   assertEquals_('valid payload passes', '', validateRsvp_(fullPayload_()));
@@ -786,6 +832,7 @@ function runAllRsvpTests() {
   testColumnOrderIndependent_();
   testUnknownHeaderAndExtraKey_();
   testSpecialCharacters_();
+  testEnsureHeadersBackfill_();
   testValidateRsvp_();
   testParseParty_();
   testDoPost_endToEnd_();

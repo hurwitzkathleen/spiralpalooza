@@ -709,6 +709,17 @@ function populateRSVPForm(r){
 
     <div class="form-note green">&#10003; Use this form to place your order. We&rsquo;ll be in touch about payment details after ordering.</div>
 
+    <div id="shirt-edit-banner" style="display:none;background:var(--cf-green-light);border:1.5px solid var(--cf-orange);border-radius:6px;padding:0.85rem 1.1rem;margin-bottom:1rem;font-size:14px;color:var(--cf-text);line-height:1.55">
+      &#9998; <strong>You&rsquo;re updating your order.</strong> Make any changes below and resubmit &mdash; your previous order will replace what we have on file.
+    </div>
+
+    <div id="shirt-edit-loading" style="display:none;font-size:14px;color:var(--cf-muted);font-style:italic;margin-bottom:1rem">Loading your order&hellip;</div>
+
+    <div id="shirt-edit-error" style="display:none;background:#fde8e8;border:1px solid #e3a9a9;border-radius:4px;padding:1rem 1.25rem;color:#a32d2d;font-size:14px;margin-bottom:1rem;line-height:1.6">
+      We couldn&rsquo;t find that order &mdash; the link may be incorrect or out of date.
+      <div style="margin-top:0.6rem"><button onclick="window.location.href=window.location.pathname + '#shirts'" style="background:var(--cf-blue);color:#fff;border:none;padding:8px 16px;border-radius:4px;font-family:var(--sans);font-size:13px;font-weight:700;cursor:pointer">Start a new order</button></div>
+    </div>
+
     <!-- Custom shirt order UI -->
     <div id="shirt-form-ui">
       <div style="background:#fff;border:1.5px solid var(--cf-border);border-radius:6px;overflow:hidden;margin-bottom:1rem">
@@ -750,9 +761,8 @@ function populateRSVPForm(r){
 
       <button onclick="submitShirtOrder()" id="shirt-submit-btn" style="background:var(--cf-green);color:#fff;border:none;padding:11px 28px;border-radius:4px;font-family:var(--sans);font-size:14px;font-weight:700;cursor:pointer;transition:background 0.15s">Place Order &rarr;</button>
 
-      <div id="shirt-success-msg" style="display:none;background:#eaf4ee;border:1px solid #a8d9b5;border-radius:4px;padding:1rem 1.25rem;color:#2e6b40;font-size:14px;margin-top:1rem;line-height:1.6">
-        &#10003; <strong>Order received!</strong> We&rsquo;ll be in touch about payment soon. Thank you! If you need to change or add to your order, just submit this form again and add a note, or email <a href="mailto:childrenfirstmail@gmail.com" style="color:#2e6b40">childrenfirstmail@gmail.com</a>.
-      </div>
+      <!-- Filled in by submitShirtOrder (message differs for a new order vs. an update). -->
+      <div id="shirt-success-msg" style="display:none;background:#eaf4ee;border:1px solid #a8d9b5;border-radius:4px;padding:1rem 1.25rem;color:#2e6b40;font-size:14px;margin-top:1rem;line-height:1.6"></div>
     </div>
 
     <!-- Hidden iframe for form submission -->
@@ -761,6 +771,11 @@ function populateRSVPForm(r){
 </section>
 
 <script>
+var SHIRT_WEBHOOK = "https://script.google.com/macros/s/AKfycbzaneNnFp6rBkGNFB4BiaD7G7T-Dq1ibe9bIhVOJDq3GQDEWmTZWwcW2eA7daD6-PfIxQ/exec";
+
+// Set when the page is opened via an emailed edit link (?edit=<token>&type=shirt); null for a new order.
+var shirtEditToken = null;
+
 // T-shirt size data
 var shirtSizes = [
   {category: "Adult Unisex", sizes: ["Adult XS","Adult Small","Adult Medium","Adult Large","Adult XL","Adult 2XL","Adult 3XL"]},
@@ -827,6 +842,9 @@ function submitShirtOrder(){
 
   var notes = document.getElementById("shirt-notes").value.trim();
 
+  var isUpdate   = !!shirtEditToken;
+  var resetLabel = isUpdate ? "Update Order →" : "Place Order →";
+
   // Disable button and show sending state
   btn.textContent = "Sending...";
   btn.disabled = true;
@@ -836,10 +854,12 @@ function submitShirtOrder(){
     name: name,
     email: email,
     sizes: sizeData,
-    notes: notes
+    notes: notes,
+    editToken: shirtEditToken || "",
+    siteUrl: window.location.origin + window.location.pathname
   };
 
-  fetch("https://script.google.com/macros/s/AKfycbzaneNnFp6rBkGNFB4BiaD7G7T-Dq1ibe9bIhVOJDq3GQDEWmTZWwcW2eA7daD6-PfIxQ/exec", {
+  fetch(SHIRT_WEBHOOK, {
     method: "POST",
     mode: "no-cors",
     headers: {"Content-Type": "application/json"},
@@ -847,22 +867,43 @@ function submitShirtOrder(){
   })
   .then(function(){
     // no-cors means we can't read the response, but if we get here it sent
-    document.getElementById("shirt-success-msg").style.display = "block";
-    document.getElementById("shirt-success-msg").scrollIntoView({behavior:"smooth", block:"start"});
-    document.getElementById("shirt-name").value = "";
-    document.getElementById("shirt-email").value = "";
-    document.getElementById("shirt-notes").value = "";
-    buildShirtTable();
-    btn.textContent = "Place Order →";
-    btn.disabled = false;
-    btn.style.opacity = "1";
+    var msgEl = document.getElementById("shirt-success-msg");
+    msgEl.innerHTML = isUpdate
+      ? "&#10003; <strong>Your order has been updated.</strong> We&rsquo;ll be in touch about payment soon. Thank you!"
+      : "&#10003; <strong>Order received!</strong> Check your email for a confirmation with a link to change your order anytime. We&rsquo;ll be in touch about payment soon. Thank you!";
+    msgEl.style.display = "block";
+    // Remove the submit button so the order can't be resent; leave the filled-in
+    // form visible above as a receipt, with the confirmation at the bottom.
+    btn.style.display = "none";
+    document.getElementById("shirt-edit-banner").style.display = "none";
+    msgEl.scrollIntoView({behavior:"smooth", block:"nearest"});
   })
   .catch(function(err){
     errEl.textContent = "Something went wrong. Please try again or email childrenfirstmail@gmail.com.";
     errEl.style.display = "block";
-    btn.textContent = "Place Order →";
+    btn.textContent = resetLabel;
     btn.disabled = false;
     btn.style.opacity = "1";
+  });
+}
+
+// Pre-fill the shirt form from an existing order (edit mode).
+function populateShirtForm(r){
+  r = r || {};
+  document.getElementById("shirt-name").value  = r.name  == null ? "" : r.name;
+  document.getElementById("shirt-email").value = r.email == null ? "" : r.email;
+  document.getElementById("shirt-notes").value = r.notes == null ? "" : r.notes;
+
+  buildShirtTable();   // reset all selects to 0, then apply saved quantities
+  var sizes = r.sizes || {};
+  shirtSizes.forEach(function(group){
+    group.sizes.forEach(function(size){
+      var safeId = size.replace(/[^a-zA-Z0-9]/g,"_");
+      var sel = document.getElementById("qty_" + safeId);
+      var qty = String(parseInt(sizes[size], 10) || 0);
+      // Only apply if the dropdown offers that quantity (options run 0-5).
+      if(sel && sel.querySelector("option[value='" + qty + "']")) sel.value = qty;
+    });
   });
 }
 </script>
@@ -1303,6 +1344,18 @@ var EDIT_FORMS = {
     updateLabel: 'Update RSVP →',
     populate:    populateRSVPForm,
     setToken:    function(t){ rsvpEditToken = t; }
+  },
+  shirt: {
+    section:     'shirts',
+    webhook:     SHIRT_WEBHOOK,
+    formUi:      'shirt-form-ui',
+    banner:      'shirt-edit-banner',
+    loading:     'shirt-edit-loading',
+    error:       'shirt-edit-error',
+    submitBtn:   'shirt-submit-btn',
+    updateLabel: 'Update Order →',
+    populate:    populateShirtForm,
+    setToken:    function(t){ shirtEditToken = t; }
   }
 };
 
