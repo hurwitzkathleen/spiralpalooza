@@ -108,9 +108,15 @@ function shirtRow_(data) {
     'Notes': data.notes
   };
   SHIRT_SIZES.forEach(function (size) {
-    values[size] = parseInt(sizes[size], 10) || 0;
+    values[size] = clampQty_(sizes[size]);
   });
   return values;
+}
+
+// Coerce a quantity to a non-negative integer. The endpoint is public, so a
+// crafted payload could send negatives/decimals that the number input can't.
+function clampQty_(v) {
+  return Math.max(0, parseInt(v, 10) || 0);
 }
 
 // Writes the order to the sheet: updates the row matching data.editToken if found,
@@ -149,7 +155,7 @@ function validateOrder_(data) {
 function totalShirts_(sizes) {
   sizes = sizes || {};
   return SHIRT_SIZES.reduce(function (sum, size) {
-    return sum + (parseInt(sizes[size], 10) || 0);
+    return sum + clampQty_(sizes[size]);
   }, 0);
 }
 
@@ -604,6 +610,36 @@ function testGetOrderForEdit_() {
   }
 }
 
+function testQuantityClampAndLargeRoundTrip_() {
+  Logger.log('testQuantityClampAndLargeRoundTrip_');
+  var sheet = makeTestSheet_();
+  var data = {
+    name: 'Bulk Buyer', email: 'bulk@example.com',
+    sizes: { 'Adult Medium': 12, 'Femme Small': -3, 'Youth XL': 1.9 }
+  };
+
+  var saved = saveOrder_(sheet, data);
+  var row = lastRowAsObject_(sheet);
+  assertEquals_('large qty stored as-is', 12, row['Adult Medium']);
+  assertEquals_('negative qty floored to 0', 0, row['Femme Small']);
+  assertEquals_('decimal truncated to int', 1, row['Youth XL']);
+
+  // The large quantity must survive the edit round-trip (the option-B fix).
+  var savedName = SHIRT_SHEET_NAME;
+  SHIRT_SHEET_NAME = TEST_SHEET_NAME;
+  try {
+    var out = JSON.parse(getOrderForEdit_(saved.token).getContent());
+    assertEquals_('large qty round-trips', 12, out.record.sizes['Adult Medium']);
+  } finally {
+    SHIRT_SHEET_NAME = savedName;
+  }
+
+  // An order that is only a negative quantity has no real shirts -> rejected.
+  assertTruthy_('all-negative order rejected', validateOrder_({
+    name: 'X', email: 'x@y.com', sizes: { 'Adult Medium': -5 }
+  }));
+}
+
 // ---- Runner (this is the one to pick in the Run dropdown) -------------------
 
 function runAllShirtTests() {
@@ -617,6 +653,7 @@ function runAllShirtTests() {
   testDoPost_rejectsInvalid_();
   testSaveOrder_updateByToken_();
   testGetOrderForEdit_();
+  testQuantityClampAndLargeRoundTrip_();
   cleanupTestSheet_();
   Logger.log('ALL SHIRT DATA-PATH TESTS PASSED');
 }

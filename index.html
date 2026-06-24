@@ -794,9 +794,7 @@ function buildShirtTable(){
       html += "<tr style='background:" + bg + ";border-bottom:1px solid #f0ede8'>" +
         "<td style='padding:7px 14px;color:var(--cf-text)'>" + size + "</td>" +
         "<td style='text-align:center;padding:7px 14px'>" +
-          "<select id='qty_" + safeId + "' style='padding:5px 8px;border:1.5px solid var(--cf-border);border-radius:4px;font-family:var(--sans);font-size:13px;background:#fff;cursor:pointer;width:70px'>" +
-          "<option value='0'>0</option><option value='1'>1</option><option value='2'>2</option><option value='3'>3</option><option value='4'>4</option><option value='5'>5</option>" +
-          "</select>" +
+          "<input type='number' inputmode='numeric' min='0' step='1' value='0' id='qty_" + safeId + "' style='padding:5px 8px;border:1.5px solid var(--cf-border);border-radius:4px;font-family:var(--sans);font-size:13px;background:#fff;width:70px;text-align:center'>" +
         "</td></tr>";
     });
   });
@@ -828,14 +826,15 @@ function submitShirtOrder(){
   shirtSizes.forEach(function(group){
     group.sizes.forEach(function(size){
       var safeId = size.replace(/[^a-zA-Z0-9]/g,"_");
-      var qty = document.getElementById("qty_" + safeId).value;
-      sizeData[size] = parseInt(qty) || 0;
-      if(qty !== "0") hasItems = true;
+      // Free-form number input: floor negatives/blanks/decimals to a non-negative integer.
+      var qty = Math.max(0, parseInt(document.getElementById("qty_" + safeId).value, 10) || 0);
+      sizeData[size] = qty;
+      if(qty > 0) hasItems = true;
     });
   });
 
   if(!hasItems){
-    errEl.textContent = "Please select a quantity of at least 1 for at least one size.";
+    errEl.textContent = "Please enter a quantity of at least 1 for at least one size.";
     errEl.style.display = "block";
     return;
   }
@@ -894,15 +893,14 @@ function populateShirtForm(r){
   document.getElementById("shirt-email").value = r.email == null ? "" : r.email;
   document.getElementById("shirt-notes").value = r.notes == null ? "" : r.notes;
 
-  buildShirtTable();   // reset all selects to 0, then apply saved quantities
+  buildShirtTable();   // reset all inputs to 0, then apply saved quantities
   var sizes = r.sizes || {};
   shirtSizes.forEach(function(group){
     group.sizes.forEach(function(size){
       var safeId = size.replace(/[^a-zA-Z0-9]/g,"_");
-      var sel = document.getElementById("qty_" + safeId);
-      var qty = String(parseInt(sizes[size], 10) || 0);
-      // Only apply if the dropdown offers that quantity (options run 0-5).
-      if(sel && sel.querySelector("option[value='" + qty + "']")) sel.value = qty;
+      var input = document.getElementById("qty_" + safeId);
+      // Number input takes any non-negative quantity, so saved values prefill exactly.
+      if(input) input.value = Math.max(0, parseInt(sizes[size], 10) || 0);
     });
   });
 }
