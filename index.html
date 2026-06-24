@@ -308,7 +308,7 @@ section{display:none}section.active{display:block}
       <div style="margin-top:0.6rem"><button onclick="window.location.href=window.location.pathname + '#rsvp'" style="background:var(--cf-blue);color:#fff;border:none;padding:8px 16px;border-radius:4px;font-family:var(--sans);font-size:13px;font-weight:700;cursor:pointer">Start a new RSVP</button></div>
     </div>
 
-    <div id="rsvp-form-ui">
+    <form id="rsvp-form-ui" onsubmit="return false">
 
       <!-- Attending -->
       <div style="background:#fff;border:1.5px solid var(--cf-border);border-radius:6px;overflow:hidden;margin-bottom:1rem">
@@ -334,26 +334,26 @@ section{display:none}section.active{display:block}
           <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-bottom:0.85rem">
             <div>
               <label style="display:block;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;color:var(--cf-muted);margin-bottom:5px">First Name *</label>
-              <input type="text" id="rsvp-fname" placeholder="First name" style="width:100%;padding:8px 10px;border:1.5px solid var(--cf-border);border-radius:4px;font-family:var(--sans);font-size:14px;outline:none">
+              <input type="text" id="rsvp-fname" name="fname" autocomplete="given-name" placeholder="First name" style="width:100%;padding:8px 10px;border:1.5px solid var(--cf-border);border-radius:4px;font-family:var(--sans);font-size:14px;outline:none">
             </div>
             <div>
               <label style="display:block;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;color:var(--cf-muted);margin-bottom:5px">Last Name *</label>
-              <input type="text" id="rsvp-lname" placeholder="Last name" style="width:100%;padding:8px 10px;border:1.5px solid var(--cf-border);border-radius:4px;font-family:var(--sans);font-size:14px;outline:none">
+              <input type="text" id="rsvp-lname" name="lname" autocomplete="family-name" placeholder="Last name" style="width:100%;padding:8px 10px;border:1.5px solid var(--cf-border);border-radius:4px;font-family:var(--sans);font-size:14px;outline:none">
             </div>
           </div>
           <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-bottom:0.85rem">
             <div>
               <label style="display:block;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;color:var(--cf-muted);margin-bottom:5px">Email *</label>
-              <input type="email" id="rsvp-email" placeholder="your@email.com" style="width:100%;padding:8px 10px;border:1.5px solid var(--cf-border);border-radius:4px;font-family:var(--sans);font-size:14px;outline:none">
+              <input type="email" id="rsvp-email" name="email" autocomplete="email" placeholder="your@email.com" style="width:100%;padding:8px 10px;border:1.5px solid var(--cf-border);border-radius:4px;font-family:var(--sans);font-size:14px;outline:none">
             </div>
             <div>
               <label style="display:block;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;color:var(--cf-muted);margin-bottom:5px">Phone</label>
-              <input type="tel" id="rsvp-phone" placeholder="(919) 000-0000" style="width:100%;padding:8px 10px;border:1.5px solid var(--cf-border);border-radius:4px;font-family:var(--sans);font-size:14px;outline:none">
+              <input type="tel" id="rsvp-phone" name="phone" autocomplete="tel" placeholder="(919) 000-0000" style="width:100%;padding:8px 10px;border:1.5px solid var(--cf-border);border-radius:4px;font-family:var(--sans);font-size:14px;outline:none">
             </div>
           </div>
           <div>
             <label style="display:block;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;color:var(--cf-muted);margin-bottom:5px">Updated Mailing Address</label>
-            <input type="text" id="rsvp-address" placeholder="Street, City, State, ZIP" style="width:100%;padding:8px 10px;border:1.5px solid var(--cf-border);border-radius:4px;font-family:var(--sans);font-size:14px;outline:none">
+            <input type="text" id="rsvp-address" name="address" autocomplete="street-address" placeholder="Street, City, State, ZIP" style="width:100%;padding:8px 10px;border:1.5px solid var(--cf-border);border-radius:4px;font-family:var(--sans);font-size:14px;outline:none">
           </div>
         </div>
       </div>
@@ -364,7 +364,7 @@ section{display:none}section.active{display:block}
         <div style="padding:1rem 1.25rem">
           <div style="margin-bottom:0.85rem">
             <label style="display:block;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;color:var(--cf-muted);margin-bottom:5px">Years affiliated with Children First *</label>
-            <input type="text" id="rsvp-years" placeholder="e.g. 2014 to 2017" style="width:100%;padding:8px 10px;border:1.5px solid var(--cf-border);border-radius:4px;font-family:var(--sans);font-size:14px;outline:none">
+            <input type="text" id="rsvp-years" autocomplete="off" placeholder="e.g. 2014 to 2017" style="width:100%;padding:8px 10px;border:1.5px solid var(--cf-border);border-radius:4px;font-family:var(--sans);font-size:14px;outline:none">
           </div>
           <div>
             <label style="display:block;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;color:var(--cf-muted);margin-bottom:8px">Your role / affiliation</label>
@@ -401,9 +401,9 @@ section{display:none}section.active{display:block}
           </div>
           <div id="rsvp-party-list">
             <div class="party-row" style="display:grid;grid-template-columns:1fr 1fr 1fr auto;gap:8px;margin-bottom:8px;align-items:center">
-              <input type="text" class="party-name" placeholder="Name" style="padding:8px 10px;border:1.5px solid var(--cf-border);border-radius:4px;font-family:var(--sans);font-size:14px;outline:none;min-width:0">
-              <input type="text" class="party-rel" placeholder="Relationship" style="padding:8px 10px;border:1.5px solid var(--cf-border);border-radius:4px;font-family:var(--sans);font-size:14px;outline:none;min-width:0">
-              <input type="email" class="party-email" placeholder="Email" style="padding:8px 10px;border:1.5px solid var(--cf-border);border-radius:4px;font-family:var(--sans);font-size:14px;outline:none;min-width:0">
+              <input type="text" class="party-name" autocomplete="name" placeholder="Name" style="padding:8px 10px;border:1.5px solid var(--cf-border);border-radius:4px;font-family:var(--sans);font-size:14px;outline:none;min-width:0">
+              <input type="text" class="party-rel" autocomplete="off" placeholder="Relationship" style="padding:8px 10px;border:1.5px solid var(--cf-border);border-radius:4px;font-family:var(--sans);font-size:14px;outline:none;min-width:0">
+              <input type="email" class="party-email" autocomplete="email" placeholder="Email" style="padding:8px 10px;border:1.5px solid var(--cf-border);border-radius:4px;font-family:var(--sans);font-size:14px;outline:none;min-width:0">
               <button type="button" onclick="this.parentElement.remove()" style="background:none;border:none;color:#aaa;font-size:20px;cursor:pointer;padding:0;line-height:1">&times;</button>
             </div>
           </div>
@@ -462,9 +462,9 @@ section{display:none}section.active{display:block}
 
       <div id="rsvp-error" style="display:none;color:#a32d2d;font-size:13px;margin-bottom:0.75rem;padding:0.5rem 0.75rem;background:#fde8e8;border-radius:4px"></div>
 
-      <button onclick="submitRSVP()" id="rsvp-submit-btn" style="background:var(--cf-blue);color:#fff;border:none;padding:11px 28px;border-radius:4px;font-family:var(--sans);font-size:14px;font-weight:700;cursor:pointer;transition:background 0.15s">Submit RSVP &rarr;</button>
+      <button type="button" onclick="submitRSVP()" id="rsvp-submit-btn" style="background:var(--cf-blue);color:#fff;border:none;padding:11px 28px;border-radius:4px;font-family:var(--sans);font-size:14px;font-weight:700;cursor:pointer;transition:background 0.15s">Submit RSVP &rarr;</button>
       <p style="font-size:12px;color:var(--cf-muted);margin-top:0.75rem;font-style:italic">&#10003; Your response will be saved to our records. RSVP deadline: September 15, 2026.</p>
-    </div>
+    </form>
   </div>
 </section>
 
@@ -481,9 +481,9 @@ function makePartyRow(name, rel, email){
   var row = document.createElement("div");
   row.className = "party-row";
   row.style.cssText = "display:grid;grid-template-columns:1fr 1fr 1fr auto;gap:8px;margin-bottom:8px;align-items:center";
-  row.innerHTML = '<input type="text" class="party-name" placeholder="Name" value="' + attrEsc(name) + '" style="' + inputStyle + '">'
-    + '<input type="text" class="party-rel" placeholder="Relationship" value="' + attrEsc(rel) + '" style="' + inputStyle + '">'
-    + '<input type="email" class="party-email" placeholder="Email" value="' + attrEsc(email) + '" style="' + inputStyle + '">'
+  row.innerHTML = '<input type="text" class="party-name" autocomplete="name" placeholder="Name" value="' + attrEsc(name) + '" style="' + inputStyle + '">'
+    + '<input type="text" class="party-rel" autocomplete="off" placeholder="Relationship" value="' + attrEsc(rel) + '" style="' + inputStyle + '">'
+    + '<input type="email" class="party-email" autocomplete="email" placeholder="Email" value="' + attrEsc(email) + '" style="' + inputStyle + '">'
     + '<button type="button" onclick="this.parentElement.remove()" style="background:none;border:none;color:#aaa;font-size:20px;cursor:pointer;padding:0;line-height:1">&times;</button>';
   return row;
 }
@@ -721,7 +721,7 @@ function populateRSVPForm(r){
     </div>
 
     <!-- Custom shirt order UI -->
-    <div id="shirt-form-ui">
+    <form id="shirt-form-ui" onsubmit="return false">
       <div style="background:#fff;border:1.5px solid var(--cf-border);border-radius:6px;overflow:hidden;margin-bottom:1rem">
 
         <!-- Name & Email -->
@@ -729,11 +729,11 @@ function populateRSVPForm(r){
           <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem">
             <div>
               <label style="display:block;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;color:var(--cf-muted);margin-bottom:5px">Full Name *</label>
-              <input type="text" id="shirt-name" placeholder="Your name" style="width:100%;padding:8px 10px;border:1.5px solid var(--cf-border);border-radius:4px;font-family:var(--sans);font-size:14px;outline:none">
+              <input type="text" id="shirt-name" name="name" autocomplete="name" placeholder="Your name" style="width:100%;padding:8px 10px;border:1.5px solid var(--cf-border);border-radius:4px;font-family:var(--sans);font-size:14px;outline:none">
             </div>
             <div>
               <label style="display:block;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;color:var(--cf-muted);margin-bottom:5px">Email *</label>
-              <input type="email" id="shirt-email" placeholder="your@email.com" style="width:100%;padding:8px 10px;border:1.5px solid var(--cf-border);border-radius:4px;font-family:var(--sans);font-size:14px;outline:none">
+              <input type="email" id="shirt-email" name="email" autocomplete="email" placeholder="your@email.com" style="width:100%;padding:8px 10px;border:1.5px solid var(--cf-border);border-radius:4px;font-family:var(--sans);font-size:14px;outline:none">
             </div>
           </div>
         </div>
@@ -759,11 +759,11 @@ function populateRSVPForm(r){
 
       <div id="shirt-error" style="display:none;color:#a32d2d;font-size:13px;margin-bottom:0.75rem;padding:0.5rem 0.75rem;background:#fde8e8;border-radius:4px"></div>
 
-      <button onclick="submitShirtOrder()" id="shirt-submit-btn" style="background:var(--cf-green);color:#fff;border:none;padding:11px 28px;border-radius:4px;font-family:var(--sans);font-size:14px;font-weight:700;cursor:pointer;transition:background 0.15s">Place Order &rarr;</button>
+      <button type="button" onclick="submitShirtOrder()" id="shirt-submit-btn" style="background:var(--cf-green);color:#fff;border:none;padding:11px 28px;border-radius:4px;font-family:var(--sans);font-size:14px;font-weight:700;cursor:pointer;transition:background 0.15s">Place Order &rarr;</button>
 
       <!-- Filled in by submitShirtOrder (message differs for a new order vs. an update). -->
       <div id="shirt-success-msg" style="display:none;background:#eaf4ee;border:1px solid #a8d9b5;border-radius:4px;padding:1rem 1.25rem;color:#2e6b40;font-size:14px;margin-top:1rem;line-height:1.6"></div>
-    </div>
+    </form>
 
     <!-- Hidden iframe for form submission -->
     <iframe id="shirt-submit-iframe" name="shirt-submit-iframe" style="display:none" title="Form submission"></iframe>
@@ -916,7 +916,7 @@ function populateShirtForm(r){
       &#10003; <strong>Thank you for volunteering!</strong> We&rsquo;ll be in touch soon with details.
     </div>
 
-    <div id="vol-form-ui">
+    <form id="vol-form-ui" onsubmit="return false">
       <!-- Role cards -->
       <div style="background:#fff;border:1.5px solid var(--cf-border);border-radius:6px;overflow:hidden;margin-bottom:1rem">
         <div style="background:var(--cf-orange);color:#fff;padding:8px 14px;font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px">Select Your Volunteer Roles</div>
@@ -1030,17 +1030,17 @@ function populateShirtForm(r){
           <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-bottom:0.85rem">
             <div>
               <label style="display:block;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;color:var(--cf-muted);margin-bottom:5px">Full Name *</label>
-              <input type="text" id="vol-name" placeholder="Your name" style="width:100%;padding:8px 10px;border:1.5px solid var(--cf-border);border-radius:4px;font-family:var(--sans);font-size:14px;outline:none">
+              <input type="text" id="vol-name" name="name" autocomplete="name" placeholder="Your name" style="width:100%;padding:8px 10px;border:1.5px solid var(--cf-border);border-radius:4px;font-family:var(--sans);font-size:14px;outline:none">
             </div>
             <div>
               <label style="display:block;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;color:var(--cf-muted);margin-bottom:5px">Email *</label>
-              <input type="email" id="vol-email" placeholder="your@email.com" style="width:100%;padding:8px 10px;border:1.5px solid var(--cf-border);border-radius:4px;font-family:var(--sans);font-size:14px;outline:none">
+              <input type="email" id="vol-email" name="email" autocomplete="email" placeholder="your@email.com" style="width:100%;padding:8px 10px;border:1.5px solid var(--cf-border);border-radius:4px;font-family:var(--sans);font-size:14px;outline:none">
             </div>
           </div>
           <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-bottom:0.85rem">
             <div>
               <label style="display:block;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;color:var(--cf-muted);margin-bottom:5px">Phone</label>
-              <input type="tel" id="vol-phone" placeholder="(919) 000-0000" style="width:100%;padding:8px 10px;border:1.5px solid var(--cf-border);border-radius:4px;font-family:var(--sans);font-size:14px;outline:none">
+              <input type="tel" id="vol-phone" name="phone" autocomplete="tel" placeholder="(919) 000-0000" style="width:100%;padding:8px 10px;border:1.5px solid var(--cf-border);border-radius:4px;font-family:var(--sans);font-size:14px;outline:none">
             </div>
 
           </div>
@@ -1053,9 +1053,9 @@ function populateShirtForm(r){
 
       <div id="vol-error" style="display:none;color:#a32d2d;font-size:13px;margin-bottom:0.75rem;padding:0.5rem 0.75rem;background:#fde8e8;border-radius:4px"></div>
 
-      <button onclick="submitVolunteer()" id="vol-submit-btn" style="background:var(--cf-orange);color:#fff;border:none;padding:11px 28px;border-radius:4px;font-family:var(--sans);font-size:14px;font-weight:700;cursor:pointer;transition:background 0.15s">Sign Up to Volunteer &rarr;</button>
+      <button type="button" onclick="submitVolunteer()" id="vol-submit-btn" style="background:var(--cf-orange);color:#fff;border:none;padding:11px 28px;border-radius:4px;font-family:var(--sans);font-size:14px;font-weight:700;cursor:pointer;transition:background 0.15s">Sign Up to Volunteer &rarr;</button>
       <p style="font-size:12px;color:var(--cf-muted);margin-top:0.75rem;font-style:italic">&#10003; Your sign-up goes directly to our volunteer coordinator.</p>
-    </div>
+    </form>
   </div>
 </section>
 
