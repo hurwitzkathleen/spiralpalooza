@@ -163,11 +163,17 @@ function ensureHeaders_(sheet) {
     sheet.setFrozenRows(1);
     return;
   }
-  var headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0]
+  // getLastColumn() is the widest used column across the whole sheet, so a data
+  // row wider than the header row would pad row 1 with trailing blanks. Trim those
+  // so missing headers append right after the real ones, not after empty gap columns.
+  var rowOne = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0]
     .map(function (h) { return String(h).trim(); });
+  var width = rowOne.length;
+  while (width > 0 && rowOne[width - 1] === '') width--;
+  var headers = rowOne.slice(0, width);
   var missing = SHIRT_HEADERS.filter(function (h) { return headers.indexOf(h) === -1; });
   if (missing.length) {
-    var start = headers.length + 1;
+    var start = width + 1;
     sheet.getRange(1, start, 1, missing.length).setValues([missing]).setFontWeight('bold');
   }
 }
@@ -471,6 +477,37 @@ function testEnsureHeadersBackfill_() {
   assertEquals_('Name still col 2', 'Name', headers[1]);
 }
 
+function testEnsureHeadersWideRow_() {
+  Logger.log('testEnsureHeadersWideRow_');
+  // Older sheet (no edit-link columns) with a data row wider than the header row.
+  var oldHeaders = ['Timestamp', 'Name', 'Email'].concat(SHIRT_SIZES).concat(['Notes']);
+  var sheet = makeTestSheet_(oldHeaders);
+  sheet.getRange(2, oldHeaders.length + 3).setValue('stray');  // value 2 cols past the headers
+
+  ensureHeaders_(sheet);
+  var headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0]
+    .map(function (h) { return String(h).trim(); });
+
+  // New headers land immediately after the real ones, not after the stray gap.
+  assertEquals_('Edit Token right after Notes', 'Edit Token', headers[oldHeaders.length]);
+  assertEquals_('Last Updated next', 'Last Updated', headers[oldHeaders.length + 1]);
+}
+
+function testPickSiteBase_() {
+  Logger.log('testPickSiteBase_');
+  // Allowlisted hosts: the client URL is returned unchanged.
+  assertEquals_('localhost allowed', 'http://localhost:8000/x', pickSiteBase_('http://localhost:8000/x'));
+  assertEquals_('prod allowed', 'https://spiralpalooza.org/', pickSiteBase_('https://spiralpalooza.org/'));
+  assertEquals_('prod subdomain allowed', 'https://www.spiralpalooza.org/', pickSiteBase_('https://www.spiralpalooza.org/'));
+  assertEquals_('pages.dev allowed', 'https://spiralpalooza.pages.dev/', pickSiteBase_('https://spiralpalooza.pages.dev/'));
+  // Everything else falls back to SITE_URL (open-redirect / phishing guard).
+  assertEquals_('evil w/ localhost query rejected', SITE_URL, pickSiteBase_('https://evil.com/?x=localhost'));
+  assertEquals_('localhost subdomain spoof rejected', SITE_URL, pickSiteBase_('https://localhost.attacker.com/'));
+  assertEquals_('prod substring spoof rejected', SITE_URL, pickSiteBase_('https://spiralpalooza.org.evil.com/'));
+  assertEquals_('non-http rejected', SITE_URL, pickSiteBase_('ftp://spiralpalooza.org/'));
+  assertEquals_('empty falls back', SITE_URL, pickSiteBase_(''));
+}
+
 function testValidateOrder_() {
   Logger.log('testValidateOrder_');
   assertEquals_('valid payload passes', '', validateOrder_(fullPayload_()));
@@ -574,6 +611,7 @@ function runAllShirtTests() {
   testMissingOptionalFields_();
   testColumnOrderIndependent_();
   testEnsureHeadersBackfill_();
+  testEnsureHeadersWideRow_();
   testValidateOrder_();
   testDoPost_endToEnd_();
   testDoPost_rejectsInvalid_();
@@ -649,5 +687,6 @@ function runEmailTests() {
   testEmail_singularAndNoNotes_();
   testEmail_updateHeading_();
   testEmail_escapesHtml_();
+  testPickSiteBase_();
   Logger.log('ALL EMAIL HTML TESTS PASSED');
 }

@@ -808,7 +808,7 @@ function submitShirtOrder(){
   var name = document.getElementById("shirt-name").value.trim();
   var email = document.getElementById("shirt-email").value.trim();
   var errEl = document.getElementById("shirt-error");
-  var btn = document.querySelector("[onclick='submitShirtOrder()']");
+  var btn = document.getElementById("shirt-submit-btn");
 
   if(!name || !email){
     errEl.textContent = "Please enter your name and email address.";
