@@ -1,0 +1,11 @@
+# clasp / Apps Script credentials — never commit these
+.clasprc.json
+**/.clasprc.json
+creds.json
+**/creds.json
+
+# Node (if clasp is installed locally rather than globally)
+node_modules/
+
+# OS noise
+.DS_Store

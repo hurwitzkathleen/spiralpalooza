@@ -297,7 +297,35 @@ section{display:none}section.active{display:block}
       &#10003; <strong>Thank you!</strong> Your RSVP is in &mdash; we can&rsquo;t wait to see you at Spiralpalooza on October 3rd!
     </div>
 
+    <div id="rsvp-edit-banner" style="display:none;background:var(--cf-green-light);border:1.5px solid var(--cf-orange);border-radius:6px;padding:0.85rem 1.1rem;margin-bottom:1rem;font-size:14px;color:var(--cf-text);line-height:1.55">
+      &#9998; <strong>You&rsquo;re updating your RSVP.</strong> Make any changes below and resubmit &mdash; your previous response will replace what we have on file.
+    </div>
+
+    <div id="rsvp-edit-loading" style="display:none;font-size:14px;color:var(--cf-muted);font-style:italic;margin-bottom:1rem">Loading your RSVP&hellip;</div>
+
+    <div id="rsvp-edit-error" style="display:none;background:#fde8e8;border:1px solid #e3a9a9;border-radius:4px;padding:1rem 1.25rem;color:#a32d2d;font-size:14px;margin-bottom:1rem;line-height:1.6">
+      We couldn&rsquo;t find that RSVP &mdash; the link may be incorrect or out of date.
+      <div style="margin-top:0.6rem"><button onclick="window.location.href=window.location.pathname + '#rsvp'" style="background:var(--cf-blue);color:#fff;border:none;padding:8px 16px;border-radius:4px;font-family:var(--sans);font-size:13px;font-weight:700;cursor:pointer">Start a new RSVP</button></div>
+    </div>
+
     <div id="rsvp-form-ui">
+
+      <!-- Attending -->
+      <div style="background:#fff;border:1.5px solid var(--cf-border);border-radius:6px;overflow:hidden;margin-bottom:1rem">
+        <div style="background:var(--cf-blue);color:#fff;padding:8px 14px;font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px">Will You Attend?</div>
+        <div style="padding:1rem 1.25rem">
+          <div style="display:flex;flex-direction:column;gap:8px">
+            <label style="display:flex;align-items:center;gap:10px;font-size:14px;cursor:pointer;padding:8px 12px;border:1.5px solid var(--cf-border);border-radius:4px;background:#fafaf8">
+              <input type="radio" name="rsvp-attending" value="Yes" checked onchange="updateAttendingUI()" style="width:auto;padding:0;border:none;accent-color:var(--cf-blue)">
+              <span><strong>Yes!</strong> I&rsquo;ll be there.</span>
+            </label>
+            <label style="display:flex;align-items:center;gap:10px;font-size:14px;cursor:pointer;padding:8px 12px;border:1.5px solid var(--cf-border);border-radius:4px;background:#fafaf8">
+              <input type="radio" name="rsvp-attending" value="No" onchange="updateAttendingUI()" style="width:auto;padding:0;border:none;accent-color:var(--cf-blue)">
+              <span><strong>Sorry, I can&rsquo;t attend.</strong> We&rsquo;ll miss you &mdash; you can still leave a message below.</span>
+            </label>
+          </div>
+        </div>
+      </div>
 
       <!-- Contact info -->
       <div style="background:#fff;border:1.5px solid var(--cf-border);border-radius:6px;overflow:hidden;margin-bottom:1rem">
@@ -362,43 +390,63 @@ section{display:none}section.active{display:block}
       </div>
 
       <!-- Party members -->
-      <div style="background:#fff;border:1.5px solid var(--cf-border);border-radius:6px;overflow:hidden;margin-bottom:1rem">
+      <div id="rsvp-section-party" style="background:#fff;border:1.5px solid var(--cf-border);border-radius:6px;overflow:hidden;margin-bottom:1rem">
         <div style="background:var(--cf-blue);color:#fff;padding:8px 14px;font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px">Who&rsquo;s Coming With You?</div>
         <div style="padding:1rem 1.25rem">
-          <p style="font-size:13px;color:var(--cf-muted);margin-bottom:0.85rem;font-style:italic">Add everyone in your group &mdash; children, family, friends.</p>
+          <p style="font-size:13px;color:var(--cf-muted);margin-bottom:0.85rem;font-style:italic">Add everyone in your group &mdash; children, family, friends. Their names will also appear on the &ldquo;who&rsquo;s coming&rdquo; list if you grant permission below.</p>
           <div class="party-headers" style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin-bottom:4px">
             <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.4px;color:var(--cf-muted)">Name</div>
             <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.4px;color:var(--cf-muted)">Relationship</div>
             <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.4px;color:var(--cf-muted)">Email (optional)</div>
           </div>
           <div id="rsvp-party-list">
-            <div class="party-row" style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:8px;align-items:center">
+            <div class="party-row" style="display:grid;grid-template-columns:1fr 1fr 1fr auto;gap:8px;margin-bottom:8px;align-items:center">
               <input type="text" class="party-name" placeholder="Name" style="padding:8px 10px;border:1.5px solid var(--cf-border);border-radius:4px;font-family:var(--sans);font-size:14px;outline:none;min-width:0">
               <input type="text" class="party-rel" placeholder="Relationship" style="padding:8px 10px;border:1.5px solid var(--cf-border);border-radius:4px;font-family:var(--sans);font-size:14px;outline:none;min-width:0">
               <input type="email" class="party-email" placeholder="Email" style="padding:8px 10px;border:1.5px solid var(--cf-border);border-radius:4px;font-family:var(--sans);font-size:14px;outline:none;min-width:0">
+              <button type="button" onclick="this.parentElement.remove()" style="background:none;border:none;color:#aaa;font-size:20px;cursor:pointer;padding:0;line-height:1">&times;</button>
             </div>
           </div>
           <button onclick="addPartyMember()" style="background:none;border:none;color:var(--cf-blue);font-family:var(--sans);font-size:13px;font-weight:700;cursor:pointer;padding:4px 0;margin-top:4px">+ Add another person</button>
+        </div>
+      </div>
 
+      <!-- Pizza dinner -->
+      <div id="rsvp-section-pizza" style="background:#fff;border:1.5px solid var(--cf-border);border-radius:6px;overflow:hidden;margin-bottom:1rem">
+        <div style="background:var(--cf-blue);color:#fff;padding:8px 14px;font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px">Pizza Dinner</div>
+        <div style="padding:1rem 1.25rem">
+          <p style="font-size:13px;color:var(--cf-muted);margin-bottom:0.85rem;font-style:italic">We&rsquo;re planning to order pizza for the party! Most of it will be regular pizza, but let us know how many people in your party need special-order pies so we can get the counts right. Leave these at 0 if none apply.</p>
+          <div style="display:grid;grid-template-columns:1fr auto;gap:10px 1rem;align-items:center;max-width:440px">
+            <label for="rsvp-pizza-gf" style="font-size:14px;color:var(--cf-text)">Gluten-free pizza eaters</label>
+            <input type="number" id="rsvp-pizza-gf" min="0" value="0" style="width:80px;padding:8px 10px;border:1.5px solid var(--cf-border);border-radius:4px;font-family:var(--sans);font-size:14px;outline:none">
+            <label for="rsvp-pizza-vegan" style="font-size:14px;color:var(--cf-text)">Vegan pizza eaters</label>
+            <input type="number" id="rsvp-pizza-vegan" min="0" value="0" style="width:80px;padding:8px 10px;border:1.5px solid var(--cf-border);border-radius:4px;font-family:var(--sans);font-size:14px;outline:none">
+            <label for="rsvp-pizza-gfvegan" style="font-size:14px;color:var(--cf-text)">Gluten-free + vegan pizza eaters</label>
+            <input type="number" id="rsvp-pizza-gfvegan" min="0" value="0" style="width:80px;padding:8px 10px;border:1.5px solid var(--cf-border);border-radius:4px;font-family:var(--sans);font-size:14px;outline:none">
+          </div>
         </div>
       </div>
 
       <!-- Additional info -->
       <div style="background:#fff;border:1.5px solid var(--cf-border);border-radius:6px;overflow:hidden;margin-bottom:1rem">
         <div style="background:var(--cf-blue);color:#fff;padding:8px 14px;font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px">Anything Else?</div>
-        <div style="padding:1rem 1.25rem">
+        <div style="padding:1rem 1.25rem;display:flex;flex-direction:column;gap:1rem">
           <div>
-            <label style="display:block;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;color:var(--cf-muted);margin-bottom:5px">Anything else you&rsquo;d like us to know?</label>
-            <textarea id="rsvp-notes" placeholder="Questions, memories, excitement..." style="width:100%;padding:8px 10px;border:1.5px solid var(--cf-border);border-radius:4px;font-family:var(--sans);font-size:14px;outline:none;resize:vertical;min-height:70px"></textarea>
+            <label style="display:block;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;color:var(--cf-muted);margin-bottom:5px">Anything you want to share only with the Spiralpalooza organizers?</label>
+            <textarea id="rsvp-notes-private" placeholder="Questions, anything just for us..." style="width:100%;padding:8px 10px;border:1.5px solid var(--cf-border);border-radius:4px;font-family:var(--sans);font-size:14px;outline:none;resize:vertical;min-height:70px"></textarea>
+          </div>
+          <div>
+            <label style="display:block;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;color:var(--cf-muted);margin-bottom:5px">Anything you want to share with the community?</label>
+            <textarea id="rsvp-notes-public" placeholder="Memories, excitement, a message to old friends..." style="width:100%;padding:8px 10px;border:1.5px solid var(--cf-border);border-radius:4px;font-family:var(--sans);font-size:14px;outline:none;resize:vertical;min-height:70px"></textarea>
           </div>
         </div>
       </div>
 
       <!-- List permission -->
-      <div style="background:#fff;border:1.5px solid var(--cf-border);border-radius:6px;overflow:hidden;margin-bottom:1rem">
+      <div id="rsvp-section-permission" style="background:#fff;border:1.5px solid var(--cf-border);border-radius:6px;overflow:hidden;margin-bottom:1rem">
         <div style="background:var(--cf-blue);color:#fff;padding:8px 14px;font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px">One More Thing</div>
         <div style="padding:1rem 1.25rem">
-          <p style="font-size:14px;color:var(--cf-text);margin-bottom:0.85rem;line-height:1.6">We&rsquo;d love to share a running list of who&rsquo;s coming on this website so the community can see who will be at Spiralpalooza. May we list your name and years affiliated with Children First on the site?</p>
+          <p style="font-size:14px;color:var(--cf-text);margin-bottom:0.85rem;line-height:1.6">We&rsquo;d love to share a running list of who&rsquo;s coming on this website so the community can see who will be at Spiralpalooza. May we list your name, any additional party members&rsquo; names, and your years affiliated with Children First on the site?</p>
           <div style="display:flex;flex-direction:column;gap:8px">
             <label style="display:flex;align-items:center;gap:10px;font-size:14px;cursor:pointer;padding:8px 12px;border:1.5px solid var(--cf-border);border-radius:4px;background:#fafaf8">
               <input type="radio" name="rsvp-permission" value="Yes" style="width:auto;padding:0;border:none;accent-color:var(--cf-blue)">
@@ -423,16 +471,36 @@ section{display:none}section.active{display:block}
 <script>
 var RSVP_WEBHOOK = "https://script.google.com/macros/s/AKfycbyHcxH8l-TTgJTN9kYGGjjTFqhR2VMiIZbCD6c42NtDghRXi0G6yKn7T_HDQLmoyZ1a/exec";
 
-function addPartyMember(){
-  var list = document.getElementById("rsvp-party-list");
+// Set when the page is opened via an emailed edit link (?edit=<token>); null for a new RSVP.
+var rsvpEditToken = null;
+
+// Build a party-member row, optionally pre-filled (used by "+ Add" and by edit prefill).
+function makePartyRow(name, rel, email){
+  function attrEsc(s){ return String(s == null ? "" : s).replace(/&/g,"&amp;").replace(/"/g,"&quot;"); }
+  var inputStyle = "padding:8px 10px;border:1.5px solid var(--cf-border);border-radius:4px;font-family:var(--sans);font-size:14px;outline:none;min-width:0";
   var row = document.createElement("div");
   row.className = "party-row";
   row.style.cssText = "display:grid;grid-template-columns:1fr 1fr 1fr auto;gap:8px;margin-bottom:8px;align-items:center";
-  row.innerHTML = '<input type="text" class="party-name" placeholder="Name" style="padding:8px 10px;border:1.5px solid var(--cf-border);border-radius:4px;font-family:var(--sans);font-size:14px;outline:none;min-width:0">'
-    + '<input type="text" class="party-rel" placeholder="Relationship" style="padding:8px 10px;border:1.5px solid var(--cf-border);border-radius:4px;font-family:var(--sans);font-size:14px;outline:none;min-width:0">'
-    + '<input type="email" class="party-email" placeholder="Email" style="padding:8px 10px;border:1.5px solid var(--cf-border);border-radius:4px;font-family:var(--sans);font-size:14px;outline:none;min-width:0">'
-    + '<button onclick="this.parentElement.remove()" style="background:none;border:none;color:#aaa;font-size:20px;cursor:pointer;padding:0;line-height:1">&times;</button>';
-  list.appendChild(row);
+  row.innerHTML = '<input type="text" class="party-name" placeholder="Name" value="' + attrEsc(name) + '" style="' + inputStyle + '">'
+    + '<input type="text" class="party-rel" placeholder="Relationship" value="' + attrEsc(rel) + '" style="' + inputStyle + '">'
+    + '<input type="email" class="party-email" placeholder="Email" value="' + attrEsc(email) + '" style="' + inputStyle + '">'
+    + '<button type="button" onclick="this.parentElement.remove()" style="background:none;border:none;color:#aaa;font-size:20px;cursor:pointer;padding:0;line-height:1">&times;</button>';
+  return row;
+}
+
+function addPartyMember(){
+  document.getElementById("rsvp-party-list").appendChild(makePartyRow());
+}
+
+// Hide party / pizza / list-permission when "Sorry, can't attend" is selected —
+// those sections are irrelevant for a regret. Name, years, and notes stay visible.
+function updateAttendingUI(){
+  var attending = (document.querySelector('input[name="rsvp-attending"]:checked') || {value:"Yes"}).value;
+  var display = attending === "Yes" ? "" : "none";
+  ["rsvp-section-party","rsvp-section-pizza","rsvp-section-permission"].forEach(function(id){
+    var el = document.getElementById(id);
+    if(el) el.style.display = display;
+  });
 }
 
 function submitRSVP(){
@@ -440,7 +508,6 @@ function submitRSVP(){
   var lname = document.getElementById("rsvp-lname").value.trim();
   var email = document.getElementById("rsvp-email").value.trim();
   var years = document.getElementById("rsvp-years").value.trim();
-  var total = document.getElementById("rsvp-total").value.trim();
   var errEl = document.getElementById("rsvp-error");
   var btn   = document.getElementById("rsvp-submit-btn");
 
@@ -456,27 +523,42 @@ function submitRSVP(){
     errEl.textContent = "Please enter your years affiliated with Children First.";
     errEl.style.display = "block"; return;
   }
-
   errEl.style.display = "none";
+
+  var attending = (document.querySelector('input[name="rsvp-attending"]:checked') || {value:"Yes"}).value;
+  var isUpdate  = !!rsvpEditToken;
+  var resetLabel = isUpdate ? "Update RSVP →" : "Submit RSVP →";
 
   // Collect roles
   var roles = [];
   document.querySelectorAll(".rsvp-role:checked").forEach(function(cb){ roles.push(cb.value); });
 
-  // Collect party members — combine name + relationship + email
+  // Party, pizza, and list-permission only apply when attending. For a regret we
+  // zero them out so a previously-filled-then-switched form can't send stale data.
   var members = [];
-  document.querySelectorAll("#rsvp-party-list .party-row").forEach(function(row){
-    var nameEl  = row.querySelector(".party-name");
-    var relEl   = row.querySelector(".party-rel");
-    var emailEl = row.querySelector(".party-email");
-    var name    = nameEl  ? nameEl.value.trim()  : "";
-    var rel     = relEl   ? relEl.value.trim()   : "";
-    var email   = emailEl ? emailEl.value.trim() : "";
-    if(name){
-      var entry = name + (rel ? " (" + rel + ")" : "") + (email ? " [" + email + "]" : "");
-      members.push(entry);
-    }
-  });
+  var pizzaGF = 0, pizzaVegan = 0, pizzaGFVegan = 0;
+  var listPermission = "No";
+
+  if(attending === "Yes"){
+    document.querySelectorAll("#rsvp-party-list .party-row").forEach(function(row){
+      var nameEl  = row.querySelector(".party-name");
+      var relEl   = row.querySelector(".party-rel");
+      var emailEl = row.querySelector(".party-email");
+      var pname   = nameEl  ? nameEl.value.trim()  : "";
+      var rel     = relEl   ? relEl.value.trim()   : "";
+      var pemail  = emailEl ? emailEl.value.trim() : "";
+      if(pname){
+        members.push(pname + (rel ? " (" + rel + ")" : "") + (pemail ? " [" + pemail + "]" : ""));
+      }
+    });
+    pizzaGF      = parseInt(document.getElementById("rsvp-pizza-gf").value, 10) || 0;
+    pizzaVegan   = parseInt(document.getElementById("rsvp-pizza-vegan").value, 10) || 0;
+    pizzaGFVegan = parseInt(document.getElementById("rsvp-pizza-gfvegan").value, 10) || 0;
+    listPermission = (document.querySelector('input[name="rsvp-permission"]:checked') || {value:"No"}).value;
+  }
+
+  // Party total is the registrant plus everyone they listed (0 if not attending).
+  var total = attending === "Yes" ? members.length + 1 : 0;
 
   btn.textContent = "Sending...";
   btn.disabled = true;
@@ -489,10 +571,18 @@ function submitRSVP(){
     phone:        document.getElementById("rsvp-phone").value.trim(),
     address:      document.getElementById("rsvp-address").value.trim(),
     years:        years,
+    attending:    attending,
     role:         roles.join(", "),
     partyMembers: members.join(" | "),
-    notes:        document.getElementById("rsvp-notes").value.trim(),
-    listPermission: (document.querySelector('input[name="rsvp-permission"]:checked') || {value:"No"}).value
+    totalInParty: total,
+    pizzaGF:       pizzaGF,
+    pizzaVegan:    pizzaVegan,
+    pizzaGFVegan:  pizzaGFVegan,
+    notesPrivate: document.getElementById("rsvp-notes-private").value.trim(),
+    notesPublic:  document.getElementById("rsvp-notes-public").value.trim(),
+    listPermission: listPermission,
+    editToken:    rsvpEditToken || "",
+    siteUrl:      window.location.origin + window.location.pathname
   };
 
   fetch(RSVP_WEBHOOK, {
@@ -502,17 +592,72 @@ function submitRSVP(){
     body: JSON.stringify(payload)
   })
   .then(function(){
-    document.getElementById("rsvp-success-msg").style.display = "block";
+    var msg;
+    if(attending === "No"){
+      msg = isUpdate
+        ? "&#10003; <strong>Your RSVP has been updated.</strong> We&rsquo;re sorry you can&rsquo;t make it &mdash; thank you for letting us know."
+        : "&#10003; <strong>Thank you for letting us know.</strong> We&rsquo;re sorry you can&rsquo;t make it to Spiralpalooza, but we&rsquo;re grateful you responded.";
+    } else {
+      msg = isUpdate
+        ? "&#10003; <strong>Your RSVP has been updated</strong> &mdash; we can&rsquo;t wait to see you at Spiralpalooza on October 3rd!"
+        : "&#10003; <strong>Thank you!</strong> Your RSVP is in &mdash; we can&rsquo;t wait to see you at Spiralpalooza on October 3rd!";
+    }
+    var msgEl = document.getElementById("rsvp-success-msg");
+    msgEl.innerHTML = msg;
+    msgEl.style.display = "block";
     document.getElementById("rsvp-form-ui").style.display = "none";
-    document.getElementById("rsvp-success-msg").scrollIntoView({behavior:"smooth",block:"start"});
+    document.getElementById("rsvp-edit-banner").style.display = "none";
+    msgEl.scrollIntoView({behavior:"smooth",block:"start"});
   })
   .catch(function(){
     errEl.textContent = "Something went wrong. Please try again or email childrenfirstmail@gmail.com.";
     errEl.style.display = "block";
-    btn.textContent = "Submit RSVP →";
+    btn.textContent = resetLabel;
     btn.disabled = false;
     btn.style.opacity = "1";
   });
+}
+
+// Pre-fill the RSVP form from an existing record (edit mode).
+function populateRSVPForm(r){
+  r = r || {};
+  function setVal(id, v){ var el = document.getElementById(id); if(el) el.value = (v == null ? "" : v); }
+  setVal("rsvp-fname", r.firstName);
+  setVal("rsvp-lname", r.lastName);
+  setVal("rsvp-email", r.email);
+  setVal("rsvp-phone", r.phone);
+  setVal("rsvp-address", r.address);
+  setVal("rsvp-years", r.years);
+  setVal("rsvp-notes-private", r.notesPrivate);
+  setVal("rsvp-notes-public", r.notesPublic);
+  setVal("rsvp-pizza-gf", r.pizzaGF != null ? r.pizzaGF : 0);
+  setVal("rsvp-pizza-vegan", r.pizzaVegan != null ? r.pizzaVegan : 0);
+  setVal("rsvp-pizza-gfvegan", r.pizzaGFVegan != null ? r.pizzaGFVegan : 0);
+
+  // Roles (stored ", "-joined)
+  var roleSet = {};
+  String(r.role || "").split(", ").forEach(function(x){ if(x) roleSet[x] = true; });
+  document.querySelectorAll(".rsvp-role").forEach(function(cb){ cb.checked = !!roleSet[cb.value]; });
+
+  // Attending (default Yes if unset)
+  var att = r.attending === "No" ? "No" : "Yes";
+  document.querySelectorAll('input[name="rsvp-attending"]').forEach(function(rb){ rb.checked = (rb.value === att); });
+
+  // List permission (default No)
+  var perm = r.listPermission === "Yes" ? "Yes" : "No";
+  document.querySelectorAll('input[name="rsvp-permission"]').forEach(function(rb){ rb.checked = (rb.value === perm); });
+
+  // Party members
+  var list = document.getElementById("rsvp-party-list");
+  list.innerHTML = "";
+  var party = r.party || [];
+  if(party.length === 0){
+    list.appendChild(makePartyRow());
+  } else {
+    party.forEach(function(m){ list.appendChild(makePartyRow(m.name, m.rel, m.email)); });
+  }
+
+  updateAttendingUI();
 }
 </script>
 
@@ -900,6 +1045,7 @@ function submitShirtOrder(){
             <tr style="background:var(--cf-blue);color:#fff">
               <th style="text-align:left;padding:10px 16px;font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px">Name</th>
               <th style="text-align:left;padding:10px 16px;font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px">Years at Children First</th>
+              <th style="text-align:left;padding:10px 16px;font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px">Message</th>
             </tr>
           </thead>
           <tbody id="whocoming-tbody"></tbody>
@@ -1010,6 +1156,19 @@ function go(i){
 function move(dir){go((ci+dir+sl.length)%sl.length)}
 setInterval(()=>move(1),8000);
 
+// Default "Who's Coming" layout: "grouped" (party members indented under host) or "flat"
+// (every guest as their own row). Override per-visit with ?wc=flat or ?wc=grouped in the URL.
+var WHOCOMING_DEFAULT_STYLE = "grouped";
+
+// Escape server-supplied text before inserting into innerHTML. Names and public
+// notes are attacker-controllable via the public RSVP endpoint, so the "who's
+// coming" list must escape them to avoid stored XSS.
+function escHtml(s){
+  return String(s == null ? "" : s)
+    .replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;")
+    .replace(/"/g,"&quot;").replace(/'/g,"&#39;");
+}
+
 // Navigation
 function loadWhoComing(){
   var loading = document.getElementById("whocoming-loading");
@@ -1028,20 +1187,54 @@ function loadWhoComing(){
   .then(function(r){ return r.json(); })
   .then(function(data){
     loading.style.display = "none";
-    if(!data.rsvps || data.rsvps.length === 0){
-      empty.style.display = "block";
-      return;
+
+    // Pick render style: ?wc=flat or ?wc=grouped in the URL overrides the default below.
+    // To permanently switch the live site, change WHOCOMING_DEFAULT_STYLE.
+    var style = (new URLSearchParams(window.location.search).get("wc") || WHOCOMING_DEFAULT_STYLE);
+    // "grouped" needs the new script (data.grouped); fall back to flat if it isn't there yet.
+    if(style === "grouped" && !data.grouped) style = "flat";
+
+    var rows = "";
+    var total = 0;
+
+    if(style === "grouped"){
+      var grouped = data.grouped || [];
+      if(grouped.length === 0){ empty.style.display = "block"; return; }
+      // Sort alphabetically by host name; party members stay grouped under their host
+      grouped.sort(function(a,b){ return a.name.localeCompare(b.name); });
+      grouped.forEach(function(r, i){
+        var bg = i % 2 === 0 ? "#fff" : "#fafaf8";
+        rows += "<tr style='background:"+bg+";border-bottom:1px solid #f0ede8'>" +
+          "<td style='padding:9px 16px;color:var(--cf-text);font-weight:500'>" + escHtml(r.name) + "</td>" +
+          "<td style='padding:9px 16px;color:var(--cf-muted)'>" + (escHtml(r.years) || "&mdash;") + "</td>" +
+          "<td style='padding:9px 16px;color:var(--cf-text);font-style:italic'>" + escHtml(r.note) + "</td>" +
+          "</tr>";
+        total += 1;
+        (r.party || []).forEach(function(member){
+          rows += "<tr style='background:"+bg+";border-bottom:1px solid #f0ede8'>" +
+            "<td style='padding:5px 16px 5px 34px;color:var(--cf-muted)'>" + escHtml(member) + "</td>" +
+            "<td></td><td></td>" +
+            "</tr>";
+          total += 1;
+        });
+      });
+    } else {
+      // Flat style: every guest (host or party member) is its own alphabetical row.
+      var flat = data.rsvps || [];
+      if(flat.length === 0){ empty.style.display = "block"; return; }
+      flat.sort(function(a,b){ return a.name.localeCompare(b.name); });
+      flat.forEach(function(r, i){
+        var bg = i % 2 === 0 ? "#fff" : "#fafaf8";
+        rows += "<tr style='background:"+bg+";border-bottom:1px solid #f0ede8'>" +
+          "<td style='padding:9px 16px;color:var(--cf-text);font-weight:500'>" + escHtml(r.name) + "</td>" +
+          "<td style='padding:9px 16px;color:var(--cf-muted)'>" + (escHtml(r.years) || "&mdash;") + "</td>" +
+          "<td style='padding:9px 16px;color:var(--cf-text);font-style:italic'>" + escHtml(r.note) + "</td>" +
+          "</tr>";
+        total += 1;
+      });
     }
-    // Sort alphabetically by last name
-    data.rsvps.sort(function(a,b){ return a.name.localeCompare(b.name); });
-    tbody.innerHTML = data.rsvps.map(function(r, i){
-      var bg = i % 2 === 0 ? "#fff" : "#fafaf8";
-      return "<tr style='background:"+bg+";border-bottom:1px solid #f0ede8'>" +
-        "<td style='padding:9px 16px;color:var(--cf-text);font-weight:500'>" + r.name + "</td>" +
-        "<td style='padding:9px 16px;color:var(--cf-muted)'>" + (r.years || "&mdash;") + "</td>" +
-        "</tr>";
-    }).join("");
-    var total = data.rsvps.length;
+
+    tbody.innerHTML = rows;
     count.textContent = total + " " + (total === 1 ? "person" : "people") + " coming so far!";
     list.style.display = "block";
   })
@@ -1092,8 +1285,73 @@ window.addEventListener('popstate', function(e){
   show(id, null, false);
 });
 
-// On first load, check for hash in URL
+function byId(id){ return document.getElementById(id); }
+
+// Registry of forms that support edit-by-link. To add a new one (shirts, volunteer),
+// give its section the same set of edit elements (<section>-edit-banner / -edit-loading
+// / -edit-error and a -form-ui wrapper + submit button), write a populate function, and
+// add an entry here. The emailed link carries ?edit=<token>&type=<key>.
+var EDIT_FORMS = {
+  rsvp: {
+    section:     'rsvp',
+    webhook:     RSVP_WEBHOOK,
+    formUi:      'rsvp-form-ui',
+    banner:      'rsvp-edit-banner',
+    loading:     'rsvp-edit-loading',
+    error:       'rsvp-edit-error',
+    submitBtn:   'rsvp-submit-btn',
+    updateLabel: 'Update RSVP →',
+    populate:    populateRSVPForm,
+    setToken:    function(t){ rsvpEditToken = t; }
+  }
+};
+
+// Generic edit-mode entry: fetch the existing record for a token, pre-fill, and
+// switch the form into update mode. Backend returns {found, record}.
+function enterEditMode(type, token){
+  var cfg = EDIT_FORMS[type];
+  if(!cfg) return;
+
+  cfg.setToken(token);
+  show(cfg.section, null, false);
+  byId(cfg.banner).style.display  = "block";
+  byId(cfg.error).style.display   = "none";
+  byId(cfg.loading).style.display = "block";
+  byId(cfg.formUi).style.display  = "none";
+  byId(cfg.submitBtn).textContent = cfg.updateLabel;
+
+  fetch(cfg.webhook + "?edit=" + encodeURIComponent(token), {method:"GET"})
+  .then(function(res){ return res.json(); })
+  .then(function(data){
+    byId(cfg.loading).style.display = "none";
+    if(!data || !data.found){
+      byId(cfg.banner).style.display = "none";
+      byId(cfg.error).style.display  = "block";
+      return;
+    }
+    cfg.populate(data.record);
+    byId(cfg.formUi).style.display = "block";
+  })
+  .catch(function(){
+    byId(cfg.loading).style.display = "none";
+    byId(cfg.banner).style.display  = "none";
+    byId(cfg.error).style.display   = "block";
+  });
+}
+
+// On first load, check for an edit link (?edit=<token>&type=<form>) first, then a hash.
 (function(){
+  var params = new URLSearchParams(window.location.search);
+  var token = params.get('edit');
+  if(token){
+    var type = params.get('type') || 'rsvp';   // default keeps older RSVP-only links working
+    var cfg = EDIT_FORMS[type];
+    if(cfg){
+      history.replaceState({page:cfg.section}, '', '#' + cfg.section);
+      enterEditMode(type, token);
+      return;
+    }
+  }
   var hash = window.location.hash.replace('#','');
   var valid = ['home','rsvp','shirts','volunteer','whocoming'];
   if(hash && valid.indexOf(hash) > -1){
