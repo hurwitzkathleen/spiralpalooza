@@ -14,7 +14,7 @@
  *   doPost  — append a new volunteer signup
  *
  * Sheet headers (row 1, created on first write):
- *   Timestamp | Name | Email | Phone | Volunteer Roles | Availability | Notes
+ *   Timestamp | Name | Email | Phone | Volunteer Roles | Notes
  */
 function doPost(e) {
   try {
@@ -32,7 +32,6 @@ function doPost(e) {
       "Email":           data.email        || "",
       "Phone":           data.phone        || "",
       "Volunteer Roles": data.roles        || "",
-      "Availability":    data.availability || "",
       "Notes":           data.notes        || ""
     };
     var headers = Object.keys(record);
