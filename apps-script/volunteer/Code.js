@@ -24,29 +24,26 @@ function doPost(e) {
     var sheet = ss.getSheetByName("Volunteers")
                || ss.insertSheet("Volunteers");
 
+    // Column order is defined once here; the header row and each data row are
+    // both derived from this map, so they can't drift out of sync.
+    var record = {
+      "Timestamp":       new Date(),
+      "Name":            data.name         || "",
+      "Email":           data.email        || "",
+      "Phone":           data.phone        || "",
+      "Volunteer Roles": data.roles        || "",
+      "Availability":    data.availability || "",
+      "Notes":           data.notes        || ""
+    };
+    var headers = Object.keys(record);
+
     if (sheet.getLastRow() === 0) {
-      sheet.appendRow([
-        "Timestamp",
-        "Name",
-        "Email",
-        "Phone",
-        "Volunteer Roles",
-        "Availability",
-        "Notes"
-      ]);
-      sheet.getRange(1, 1, 1, 7).setFontWeight("bold");
+      sheet.appendRow(headers);
+      sheet.getRange(1, 1, 1, headers.length).setFontWeight("bold");
       sheet.setFrozenRows(1);
     }
 
-    sheet.appendRow([
-      new Date(),
-      data.name         || "",
-      data.email        || "",
-      data.phone        || "",
-      data.roles        || "",
-      data.availability || "",
-      data.notes        || ""
-    ]);
+    sheet.appendRow(headers.map(function(h) { return record[h]; }));
 
     return ContentService
       .createTextOutput(JSON.stringify({status:"success"}))
