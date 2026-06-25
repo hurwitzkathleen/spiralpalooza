@@ -4,7 +4,6 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Spiralpalooza — Friends of the Family Remembering Party</title>
-<link rel="icon" href="favicon.svg" type="image/svg+xml">
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 :root{
@@ -139,8 +138,37 @@ section{display:none}section.active{display:block}
 </style>
 </head>
 <body>
+<!-- Password Gate -->
+<div id="password-gate" style="display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;background:var(--cf-cream);padding:2rem;text-align:center">
+  <div style="max-width:420px;width:100%">
+    <div style="margin-bottom:1.5rem">
+      <div style="font-family:var(--sans);font-size:26px;font-weight:700;color:var(--cf-blue);line-height:1.2">Spiralpalooza</div>
+      <div style="font-family:var(--sans);font-size:14px;color:var(--cf-muted);margin-top:4px">Friends of the Family Remembering Party</div>
+    </div>
+    <div style="background:#fff;border:1.5px solid var(--cf-border);border-radius:8px;padding:2rem;box-shadow:0 2px 12px rgba(0,0,0,0.06)">
+      <p style="font-family:var(--sans);font-size:15px;color:var(--cf-text);margin-bottom:0.5rem;font-weight:700">This site is for the Children First community.</p>
+      <p style="font-family:var(--sans);font-size:13px;color:var(--cf-muted);margin-bottom:1.5rem;line-height:1.6">Please enter the password to continue.</p>
+      <div style="background:var(--cf-blue-light);border:1px solid var(--cf-border);border-radius:4px;padding:0.75rem 1rem;margin-bottom:1.25rem;font-family:var(--sans);font-size:13px;color:var(--cf-text);text-align:left">
+        <strong>Hint:</strong> What is Donna&rsquo;s Children First sign (lower case letters)?
+      </div>
+      <input type="password" id="gate-password" placeholder="Enter password"
+        style="width:100%;padding:10px 14px;border:1.5px solid var(--cf-border);border-radius:4px;font-family:var(--sans);font-size:15px;outline:none;margin-bottom:0.75rem;text-align:center;letter-spacing:2px"
+        onkeydown="if(event.key==='Enter') checkPassword()">
+      <div id="gate-error" style="display:none;color:#a32d2d;font-size:13px;margin-bottom:0.75rem;font-family:var(--sans)">
+        Incorrect password. Try again!
+      </div>
+      <button onclick="checkPassword()" style="width:100%;background:var(--cf-blue);color:#fff;border:none;padding:11px;border-radius:4px;font-family:var(--sans);font-size:14px;font-weight:700;cursor:pointer">
+        Enter &rarr;
+      </button>
+    </div>
+    <p style="font-family:var(--sans);font-size:12px;color:var(--cf-muted);margin-top:1.25rem;line-height:1.6">
+      Questions? Contact Donna at <a href="mailto:childrenfirstmail@gmail.com" style="color:var(--cf-blue)">childrenfirstmail@gmail.com</a>
+    </p>
+  </div>
+</div>
 
-
+<!-- Main site -->
+<div id="main-site" style="display:none">
 
 <nav>
   <a href="https://www.childrenfirstschool.org" target="_blank" class="logo" style="text-decoration:none">
@@ -167,7 +195,7 @@ section{display:none}section.active{display:block}
   <div class="carousel-outer">
     <div class="carousel-track" id="track">
         <div class="slide">
-          <img class="slide-img" style="background:var(--cf-cream)" src="https://drive.google.com/thumbnail?id=1FpdNLBmBeL6Z3-KMDIm0XWpb5AIt4mI2&sz=w1200" alt="Children First memory">
+          <img class="slide-img" style="background:var(--cf-cream)" src="https://drive.google.com/thumbnail?id=1A56bkqLwgIhrgkUIKC1pg-p7PkMpKk4c&sz=w1200" alt="Children First memory">
           <div class="slide-body">
             <div class="slide-eyebrow" style="color:#ffffff">Welcome</div>
             <div class="slide-h" style="color:#ffffff">Friends of the Family:<br>The Spiralpalooza<br>Remembering Party</div>
@@ -176,7 +204,7 @@ section{display:none}section.active{display:block}
           </div>
         </div>
         <div class="slide">
-          <img class="slide-img" style="background:var(--cf-cream)" src="https://drive.google.com/thumbnail?id=1bvESII0XM3go-92npLCOFpdPmDDuxv2c&sz=w1200" alt="Children First memory">
+          <img class="slide-img" style="background:var(--cf-cream)" src="https://drive.google.com/thumbnail?id=1lszUtNMZwPOwv5GhrRdzj9Cpgz7gRJgL&sz=w1200" alt="Children First memory">
           <div class="slide-body">
             <div class="slide-eyebrow" style="color:#ffffff">October 3, 2026</div>
             <div class="slide-h" style="color:#ffffff">Join us on the playground<br>at 1211 Carroll Street</div>
@@ -185,7 +213,7 @@ section{display:none}section.active{display:block}
           </div>
         </div>
         <div class="slide">
-          <img class="slide-img" style="background:var(--cf-cream)" src="https://drive.google.com/thumbnail?id=1v1An9RAluOvPmDRraX5RVy7WNBneFlpf&sz=w1200" alt="Children First memory">
+          <img class="slide-img" style="background:var(--cf-cream)" src="https://drive.google.com/thumbnail?id=1IABx4obVPgSmPJtXLpQD9l7Is6mlGjHu&sz=w1200" alt="Children First memory">
           <div class="slide-body">
             <div class="slide-eyebrow" style="color:#ffffff">Reunion & Remembrance</div>
             <div class="slide-h" style="color:#ffffff">Reconnecting families,<br>honoring a legacy</div>
@@ -194,7 +222,7 @@ section{display:none}section.active{display:block}
           </div>
         </div>
         <div class="slide">
-          <img class="slide-img" style="background:var(--cf-cream)" src="https://drive.google.com/thumbnail?id=1123vm5xmfETbTtevChny4ZxCAy_MKTIy&sz=w1200" alt="Children First memory">
+          <img class="slide-img" style="background:var(--cf-cream)" src="https://drive.google.com/thumbnail?id=17mODIBXlwHRtrJEIpiuexpXSDzz0yHsu&sz=w1200" alt="Children First memory">
           <div class="slide-body">
             <div class="slide-eyebrow" style="color:#ffffff">T-Shirts</div>
             <div class="slide-h" style="color:#ffffff">Wear your Spiralpalooza<br>spirit with pride</div>
@@ -228,15 +256,15 @@ section{display:none}section.active{display:block}
       <div style="font-weight:700;font-size:15px;margin-bottom:0.75rem;color:var(--cf-blue)">What will it be like?</div>
       <p style="font-size:14px;color:var(--cf-muted);margin-bottom:0.75rem">We are structuring Spiralpalooza to contain all the essential ingredients of a Children First experience&hellip;</p>
       <ul style="font-size:14px;color:var(--cf-text);line-height:1.8;padding-left:1.25rem">
-        <li>Lots of open time for play, with just one &ldquo;Must-Do&rdquo;</li>
-        <li>Beautiful materials at the ready. Draw! Paint! Collage!</li>
-        <li>Lots of sensory and building play. Blocks! Sand River! Creation Station!</li>
-        <li>A big space for active play (we&rsquo;re hoping to close the street for trikes, balls, chase and other wild happy action!)</li>
+        <li>Lots of open time for play &mdash; with just ONE must-do</li>
+        <li>Beautiful materials at the ready</li>
+        <li>Free flow between indoor and outdoor spaces</li>
+        <li>Lots of sensory play</li>
+        <li>A big space for active play (we&rsquo;re hoping to close the street for trikes, balls, chase and wild happy play!)</li>
         <li>Music and dancing</li>
-        <li>A cozy Loft Room slideshow</li>
         <li>A &ldquo;Here We Are Together&rdquo; Magic Circle moment &mdash; gathering and hearing every Children Firster&rsquo;s voice</li>
         <li>Lots of simple and yummy snacks (before the Magic Circle)</li>
-        <li>Pizza dinner and dessert (after the Magic Circle)</li>
+        <li>Pizza dinner and dessert after the Magic Circle</li>
       </ul>
     </div>
 
@@ -245,7 +273,7 @@ section{display:none}section.active{display:block}
       Come to the Studio to make a page for the <strong>Children First Spiralpalooza Portfolio</strong> &mdash; share a reflection, a memory, a gratitude, a lingering question, or a wish for the future.
     </div>
     <div style="background:#fff;border:1.5px solid var(--cf-border);border-left:4px solid var(--cf-orange);border-radius:4px;padding:1rem 1.25rem;font-size:14px;margin-bottom:1.5rem;line-height:1.6">
-      <div style="font-weight:700;margin-bottom:0.4rem;color:var(--cf-orange)">&#9733; One All-Together Moment</div>
+      <div style="font-weight:700;margin-bottom:0.4rem;color:var(--cf-orange)">&#9733; Must-Do: The Magic Circle</div>
       Join us for the <strong>Magic Circle</strong>, where every Children Firster is invited to share one memory!
     </div>
 
@@ -298,35 +326,7 @@ section{display:none}section.active{display:block}
       &#10003; <strong>Thank you!</strong> Your RSVP is in &mdash; we can&rsquo;t wait to see you at Spiralpalooza on October 3rd!
     </div>
 
-    <div id="rsvp-edit-banner" style="display:none;background:var(--cf-green-light);border:1.5px solid var(--cf-orange);border-radius:6px;padding:0.85rem 1.1rem;margin-bottom:1rem;font-size:14px;color:var(--cf-text);line-height:1.55">
-      &#9998; <strong>You&rsquo;re updating your RSVP.</strong> Make any changes below and resubmit &mdash; your previous response will replace what we have on file.
-    </div>
-
-    <div id="rsvp-edit-loading" style="display:none;font-size:14px;color:var(--cf-muted);font-style:italic;margin-bottom:1rem">Loading your RSVP&hellip;</div>
-
-    <div id="rsvp-edit-error" style="display:none;background:#fde8e8;border:1px solid #e3a9a9;border-radius:4px;padding:1rem 1.25rem;color:#a32d2d;font-size:14px;margin-bottom:1rem;line-height:1.6">
-      We couldn&rsquo;t find that RSVP &mdash; the link may be incorrect or out of date.
-      <div style="margin-top:0.6rem"><button onclick="window.location.href=window.location.pathname + '#rsvp'" style="background:var(--cf-blue);color:#fff;border:none;padding:8px 16px;border-radius:4px;font-family:var(--sans);font-size:13px;font-weight:700;cursor:pointer">Start a new RSVP</button></div>
-    </div>
-
-    <form id="rsvp-form-ui" onsubmit="return false">
-
-      <!-- Attending -->
-      <div style="background:#fff;border:1.5px solid var(--cf-border);border-radius:6px;overflow:hidden;margin-bottom:1rem">
-        <div style="background:var(--cf-blue);color:#fff;padding:8px 14px;font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px">Will You Attend?</div>
-        <div style="padding:1rem 1.25rem">
-          <div style="display:flex;flex-direction:column;gap:8px">
-            <label style="display:flex;align-items:center;gap:10px;font-size:14px;cursor:pointer;padding:8px 12px;border:1.5px solid var(--cf-border);border-radius:4px;background:#fafaf8">
-              <input type="radio" name="rsvp-attending" value="Yes" checked onchange="updateAttendingUI()" style="width:auto;padding:0;border:none;accent-color:var(--cf-blue)">
-              <span><strong>Yes!</strong> I&rsquo;ll be there.</span>
-            </label>
-            <label style="display:flex;align-items:center;gap:10px;font-size:14px;cursor:pointer;padding:8px 12px;border:1.5px solid var(--cf-border);border-radius:4px;background:#fafaf8">
-              <input type="radio" name="rsvp-attending" value="No" onchange="updateAttendingUI()" style="width:auto;padding:0;border:none;accent-color:var(--cf-blue)">
-              <span><strong>Sorry, I can&rsquo;t attend.</strong> We&rsquo;ll miss you &mdash; you can still leave a message below.</span>
-            </label>
-          </div>
-        </div>
-      </div>
+    <div id="rsvp-form-ui">
 
       <!-- Contact info -->
       <div style="background:#fff;border:1.5px solid var(--cf-border);border-radius:6px;overflow:hidden;margin-bottom:1rem">
@@ -335,26 +335,26 @@ section{display:none}section.active{display:block}
           <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-bottom:0.85rem">
             <div>
               <label style="display:block;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;color:var(--cf-muted);margin-bottom:5px">First Name *</label>
-              <input type="text" id="rsvp-fname" name="fname" autocomplete="given-name" placeholder="First name" style="width:100%;padding:8px 10px;border:1.5px solid var(--cf-border);border-radius:4px;font-family:var(--sans);font-size:14px;outline:none">
+              <input type="text" id="rsvp-fname" placeholder="First name" style="width:100%;padding:8px 10px;border:1.5px solid var(--cf-border);border-radius:4px;font-family:var(--sans);font-size:14px;outline:none">
             </div>
             <div>
               <label style="display:block;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;color:var(--cf-muted);margin-bottom:5px">Last Name *</label>
-              <input type="text" id="rsvp-lname" name="lname" autocomplete="family-name" placeholder="Last name" style="width:100%;padding:8px 10px;border:1.5px solid var(--cf-border);border-radius:4px;font-family:var(--sans);font-size:14px;outline:none">
+              <input type="text" id="rsvp-lname" placeholder="Last name" style="width:100%;padding:8px 10px;border:1.5px solid var(--cf-border);border-radius:4px;font-family:var(--sans);font-size:14px;outline:none">
             </div>
           </div>
           <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-bottom:0.85rem">
             <div>
               <label style="display:block;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;color:var(--cf-muted);margin-bottom:5px">Email *</label>
-              <input type="email" id="rsvp-email" name="email" autocomplete="email" placeholder="your@email.com" style="width:100%;padding:8px 10px;border:1.5px solid var(--cf-border);border-radius:4px;font-family:var(--sans);font-size:14px;outline:none">
+              <input type="email" id="rsvp-email" placeholder="your@email.com" style="width:100%;padding:8px 10px;border:1.5px solid var(--cf-border);border-radius:4px;font-family:var(--sans);font-size:14px;outline:none">
             </div>
             <div>
               <label style="display:block;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;color:var(--cf-muted);margin-bottom:5px">Phone</label>
-              <input type="tel" id="rsvp-phone" name="phone" autocomplete="tel" placeholder="(919) 000-0000" style="width:100%;padding:8px 10px;border:1.5px solid var(--cf-border);border-radius:4px;font-family:var(--sans);font-size:14px;outline:none">
+              <input type="tel" id="rsvp-phone" placeholder="(919) 000-0000" style="width:100%;padding:8px 10px;border:1.5px solid var(--cf-border);border-radius:4px;font-family:var(--sans);font-size:14px;outline:none">
             </div>
           </div>
           <div>
             <label style="display:block;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;color:var(--cf-muted);margin-bottom:5px">Updated Mailing Address</label>
-            <input type="text" id="rsvp-address" name="address" autocomplete="street-address" placeholder="Street, City, State, ZIP" style="width:100%;padding:8px 10px;border:1.5px solid var(--cf-border);border-radius:4px;font-family:var(--sans);font-size:14px;outline:none">
+            <input type="text" id="rsvp-address" placeholder="Street, City, State, ZIP" style="width:100%;padding:8px 10px;border:1.5px solid var(--cf-border);border-radius:4px;font-family:var(--sans);font-size:14px;outline:none">
           </div>
         </div>
       </div>
@@ -365,7 +365,7 @@ section{display:none}section.active{display:block}
         <div style="padding:1rem 1.25rem">
           <div style="margin-bottom:0.85rem">
             <label style="display:block;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;color:var(--cf-muted);margin-bottom:5px">Years affiliated with Children First *</label>
-            <input type="text" id="rsvp-years" autocomplete="off" placeholder="e.g. 2014 to 2017" style="width:100%;padding:8px 10px;border:1.5px solid var(--cf-border);border-radius:4px;font-family:var(--sans);font-size:14px;outline:none">
+            <input type="text" id="rsvp-years" placeholder="e.g. 2014 to 2017" style="width:100%;padding:8px 10px;border:1.5px solid var(--cf-border);border-radius:4px;font-family:var(--sans);font-size:14px;outline:none">
           </div>
           <div>
             <label style="display:block;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;color:var(--cf-muted);margin-bottom:8px">Your role / affiliation</label>
@@ -391,63 +391,43 @@ section{display:none}section.active{display:block}
       </div>
 
       <!-- Party members -->
-      <div id="rsvp-section-party" style="background:#fff;border:1.5px solid var(--cf-border);border-radius:6px;overflow:hidden;margin-bottom:1rem">
+      <div style="background:#fff;border:1.5px solid var(--cf-border);border-radius:6px;overflow:hidden;margin-bottom:1rem">
         <div style="background:var(--cf-blue);color:#fff;padding:8px 14px;font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px">Who&rsquo;s Coming With You?</div>
         <div style="padding:1rem 1.25rem">
-          <p style="font-size:13px;color:var(--cf-muted);margin-bottom:0.85rem;font-style:italic">Add everyone in your group &mdash; children, family, friends. Their names will also appear on the &ldquo;who&rsquo;s coming&rdquo; list if you grant permission below.</p>
+          <p style="font-size:13px;color:var(--cf-muted);margin-bottom:0.85rem;font-style:italic">Add everyone in your group &mdash; children, family, friends.</p>
           <div class="party-headers" style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin-bottom:4px">
             <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.4px;color:var(--cf-muted)">Name</div>
             <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.4px;color:var(--cf-muted)">Relationship</div>
             <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.4px;color:var(--cf-muted)">Email (optional)</div>
           </div>
           <div id="rsvp-party-list">
-            <div class="party-row" style="display:grid;grid-template-columns:1fr 1fr 1fr auto;gap:8px;margin-bottom:8px;align-items:center">
-              <input type="text" class="party-name" autocomplete="name" placeholder="Name" style="padding:8px 10px;border:1.5px solid var(--cf-border);border-radius:4px;font-family:var(--sans);font-size:14px;outline:none;min-width:0">
-              <input type="text" class="party-rel" autocomplete="off" placeholder="Relationship" style="padding:8px 10px;border:1.5px solid var(--cf-border);border-radius:4px;font-family:var(--sans);font-size:14px;outline:none;min-width:0">
-              <input type="email" class="party-email" autocomplete="email" placeholder="Email" style="padding:8px 10px;border:1.5px solid var(--cf-border);border-radius:4px;font-family:var(--sans);font-size:14px;outline:none;min-width:0">
-              <button type="button" onclick="this.parentElement.remove()" style="background:none;border:none;color:#aaa;font-size:20px;cursor:pointer;padding:0;line-height:1">&times;</button>
+            <div class="party-row" style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:8px;align-items:center">
+              <input type="text" class="party-name" placeholder="Name" style="padding:8px 10px;border:1.5px solid var(--cf-border);border-radius:4px;font-family:var(--sans);font-size:14px;outline:none;min-width:0">
+              <input type="text" class="party-rel" placeholder="Relationship" style="padding:8px 10px;border:1.5px solid var(--cf-border);border-radius:4px;font-family:var(--sans);font-size:14px;outline:none;min-width:0">
+              <input type="email" class="party-email" placeholder="Email" style="padding:8px 10px;border:1.5px solid var(--cf-border);border-radius:4px;font-family:var(--sans);font-size:14px;outline:none;min-width:0">
             </div>
           </div>
           <button onclick="addPartyMember()" style="background:none;border:none;color:var(--cf-blue);font-family:var(--sans);font-size:13px;font-weight:700;cursor:pointer;padding:4px 0;margin-top:4px">+ Add another person</button>
-        </div>
-      </div>
 
-      <!-- Pizza dinner -->
-      <div id="rsvp-section-pizza" style="background:#fff;border:1.5px solid var(--cf-border);border-radius:6px;overflow:hidden;margin-bottom:1rem">
-        <div style="background:var(--cf-blue);color:#fff;padding:8px 14px;font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px">Pizza Dinner</div>
-        <div style="padding:1rem 1.25rem">
-          <p style="font-size:13px;color:var(--cf-muted);margin-bottom:0.85rem;font-style:italic">We&rsquo;re planning to order pizza for the party! Most of it will be regular pizza, but let us know how many people in your party need special-order pies so we can get the counts right. Leave these at 0 if none apply.</p>
-          <div style="display:grid;grid-template-columns:1fr auto;gap:10px 1rem;align-items:center;max-width:440px">
-            <label for="rsvp-pizza-gf" style="font-size:14px;color:var(--cf-text)">Gluten-free pizza eaters</label>
-            <input type="number" id="rsvp-pizza-gf" min="0" value="0" style="width:80px;padding:8px 10px;border:1.5px solid var(--cf-border);border-radius:4px;font-family:var(--sans);font-size:14px;outline:none">
-            <label for="rsvp-pizza-vegan" style="font-size:14px;color:var(--cf-text)">Vegan pizza eaters</label>
-            <input type="number" id="rsvp-pizza-vegan" min="0" value="0" style="width:80px;padding:8px 10px;border:1.5px solid var(--cf-border);border-radius:4px;font-family:var(--sans);font-size:14px;outline:none">
-            <label for="rsvp-pizza-gfvegan" style="font-size:14px;color:var(--cf-text)">Gluten-free + vegan pizza eaters</label>
-            <input type="number" id="rsvp-pizza-gfvegan" min="0" value="0" style="width:80px;padding:8px 10px;border:1.5px solid var(--cf-border);border-radius:4px;font-family:var(--sans);font-size:14px;outline:none">
-          </div>
         </div>
       </div>
 
       <!-- Additional info -->
       <div style="background:#fff;border:1.5px solid var(--cf-border);border-radius:6px;overflow:hidden;margin-bottom:1rem">
         <div style="background:var(--cf-blue);color:#fff;padding:8px 14px;font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px">Anything Else?</div>
-        <div style="padding:1rem 1.25rem;display:flex;flex-direction:column;gap:1rem">
+        <div style="padding:1rem 1.25rem">
           <div>
-            <label style="display:block;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;color:var(--cf-muted);margin-bottom:5px">Anything you want to share only with the Spiralpalooza organizers?</label>
-            <textarea id="rsvp-notes-private" placeholder="Questions, anything just for us..." style="width:100%;padding:8px 10px;border:1.5px solid var(--cf-border);border-radius:4px;font-family:var(--sans);font-size:14px;outline:none;resize:vertical;min-height:70px"></textarea>
-          </div>
-          <div>
-            <label style="display:block;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;color:var(--cf-muted);margin-bottom:5px">Anything you want to share with the community?</label>
-            <textarea id="rsvp-notes-public" placeholder="Memories, excitement, a message to old friends..." style="width:100%;padding:8px 10px;border:1.5px solid var(--cf-border);border-radius:4px;font-family:var(--sans);font-size:14px;outline:none;resize:vertical;min-height:70px"></textarea>
+            <label style="display:block;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;color:var(--cf-muted);margin-bottom:5px">Anything else you&rsquo;d like us to know?</label>
+            <textarea id="rsvp-notes" placeholder="Questions, memories, excitement..." style="width:100%;padding:8px 10px;border:1.5px solid var(--cf-border);border-radius:4px;font-family:var(--sans);font-size:14px;outline:none;resize:vertical;min-height:70px"></textarea>
           </div>
         </div>
       </div>
 
       <!-- List permission -->
-      <div id="rsvp-section-permission" style="background:#fff;border:1.5px solid var(--cf-border);border-radius:6px;overflow:hidden;margin-bottom:1rem">
+      <div style="background:#fff;border:1.5px solid var(--cf-border);border-radius:6px;overflow:hidden;margin-bottom:1rem">
         <div style="background:var(--cf-blue);color:#fff;padding:8px 14px;font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px">One More Thing</div>
         <div style="padding:1rem 1.25rem">
-          <p style="font-size:14px;color:var(--cf-text);margin-bottom:0.85rem;line-height:1.6">We&rsquo;d love to share a running list of who&rsquo;s coming on this website so the community can see who will be at Spiralpalooza. May we list your name, any additional party members&rsquo; names, and your years affiliated with Children First on the site?</p>
+          <p style="font-size:14px;color:var(--cf-text);margin-bottom:0.85rem;line-height:1.6">We&rsquo;d love to share a running list of who&rsquo;s coming on this website so the community can see who will be at Spiralpalooza. May we list your name and years affiliated with Children First on the site?</p>
           <div style="display:flex;flex-direction:column;gap:8px">
             <label style="display:flex;align-items:center;gap:10px;font-size:14px;cursor:pointer;padding:8px 12px;border:1.5px solid var(--cf-border);border-radius:4px;background:#fafaf8">
               <input type="radio" name="rsvp-permission" value="Yes" style="width:auto;padding:0;border:none;accent-color:var(--cf-blue)">
@@ -463,45 +443,25 @@ section{display:none}section.active{display:block}
 
       <div id="rsvp-error" style="display:none;color:#a32d2d;font-size:13px;margin-bottom:0.75rem;padding:0.5rem 0.75rem;background:#fde8e8;border-radius:4px"></div>
 
-      <button type="button" onclick="submitRSVP()" id="rsvp-submit-btn" style="background:var(--cf-blue);color:#fff;border:none;padding:11px 28px;border-radius:4px;font-family:var(--sans);font-size:14px;font-weight:700;cursor:pointer;transition:background 0.15s">Submit RSVP &rarr;</button>
+      <button onclick="submitRSVP()" id="rsvp-submit-btn" style="background:var(--cf-blue);color:#fff;border:none;padding:11px 28px;border-radius:4px;font-family:var(--sans);font-size:14px;font-weight:700;cursor:pointer;transition:background 0.15s">Submit RSVP &rarr;</button>
       <p style="font-size:12px;color:var(--cf-muted);margin-top:0.75rem;font-style:italic">&#10003; Your response will be saved to our records. RSVP deadline: September 15, 2026.</p>
-    </form>
+    </div>
   </div>
 </section>
 
 <script>
 var RSVP_WEBHOOK = "https://script.google.com/macros/s/AKfycbyHcxH8l-TTgJTN9kYGGjjTFqhR2VMiIZbCD6c42NtDghRXi0G6yKn7T_HDQLmoyZ1a/exec";
 
-// Set when the page is opened via an emailed edit link (?edit=<token>); null for a new RSVP.
-var rsvpEditToken = null;
-
-// Build a party-member row, optionally pre-filled (used by "+ Add" and by edit prefill).
-function makePartyRow(name, rel, email){
-  function attrEsc(s){ return String(s == null ? "" : s).replace(/&/g,"&amp;").replace(/"/g,"&quot;"); }
-  var inputStyle = "padding:8px 10px;border:1.5px solid var(--cf-border);border-radius:4px;font-family:var(--sans);font-size:14px;outline:none;min-width:0";
+function addPartyMember(){
+  var list = document.getElementById("rsvp-party-list");
   var row = document.createElement("div");
   row.className = "party-row";
   row.style.cssText = "display:grid;grid-template-columns:1fr 1fr 1fr auto;gap:8px;margin-bottom:8px;align-items:center";
-  row.innerHTML = '<input type="text" class="party-name" autocomplete="name" placeholder="Name" value="' + attrEsc(name) + '" style="' + inputStyle + '">'
-    + '<input type="text" class="party-rel" autocomplete="off" placeholder="Relationship" value="' + attrEsc(rel) + '" style="' + inputStyle + '">'
-    + '<input type="email" class="party-email" autocomplete="email" placeholder="Email" value="' + attrEsc(email) + '" style="' + inputStyle + '">'
-    + '<button type="button" onclick="this.parentElement.remove()" style="background:none;border:none;color:#aaa;font-size:20px;cursor:pointer;padding:0;line-height:1">&times;</button>';
-  return row;
-}
-
-function addPartyMember(){
-  document.getElementById("rsvp-party-list").appendChild(makePartyRow());
-}
-
-// Hide party / pizza / list-permission when "Sorry, can't attend" is selected —
-// those sections are irrelevant for a regret. Name, years, and notes stay visible.
-function updateAttendingUI(){
-  var attending = (document.querySelector('input[name="rsvp-attending"]:checked') || {value:"Yes"}).value;
-  var display = attending === "Yes" ? "" : "none";
-  ["rsvp-section-party","rsvp-section-pizza","rsvp-section-permission"].forEach(function(id){
-    var el = document.getElementById(id);
-    if(el) el.style.display = display;
-  });
+  row.innerHTML = '<input type="text" class="party-name" placeholder="Name" style="padding:8px 10px;border:1.5px solid var(--cf-border);border-radius:4px;font-family:var(--sans);font-size:14px;outline:none;min-width:0">'
+    + '<input type="text" class="party-rel" placeholder="Relationship" style="padding:8px 10px;border:1.5px solid var(--cf-border);border-radius:4px;font-family:var(--sans);font-size:14px;outline:none;min-width:0">'
+    + '<input type="email" class="party-email" placeholder="Email" style="padding:8px 10px;border:1.5px solid var(--cf-border);border-radius:4px;font-family:var(--sans);font-size:14px;outline:none;min-width:0">'
+    + '<button onclick="this.parentElement.remove()" style="background:none;border:none;color:#aaa;font-size:20px;cursor:pointer;padding:0;line-height:1">&times;</button>';
+  list.appendChild(row);
 }
 
 function submitRSVP(){
@@ -509,6 +469,7 @@ function submitRSVP(){
   var lname = document.getElementById("rsvp-lname").value.trim();
   var email = document.getElementById("rsvp-email").value.trim();
   var years = document.getElementById("rsvp-years").value.trim();
+  var total = document.getElementById("rsvp-total").value.trim();
   var errEl = document.getElementById("rsvp-error");
   var btn   = document.getElementById("rsvp-submit-btn");
 
@@ -524,42 +485,27 @@ function submitRSVP(){
     errEl.textContent = "Please enter your years affiliated with Children First.";
     errEl.style.display = "block"; return;
   }
-  errEl.style.display = "none";
 
-  var attending = (document.querySelector('input[name="rsvp-attending"]:checked') || {value:"Yes"}).value;
-  var isUpdate  = !!rsvpEditToken;
-  var resetLabel = isUpdate ? "Update RSVP →" : "Submit RSVP →";
+  errEl.style.display = "none";
 
   // Collect roles
   var roles = [];
   document.querySelectorAll(".rsvp-role:checked").forEach(function(cb){ roles.push(cb.value); });
 
-  // Party, pizza, and list-permission only apply when attending. For a regret we
-  // zero them out so a previously-filled-then-switched form can't send stale data.
+  // Collect party members — combine name + relationship + email
   var members = [];
-  var pizzaGF = 0, pizzaVegan = 0, pizzaGFVegan = 0;
-  var listPermission = "No";
-
-  if(attending === "Yes"){
-    document.querySelectorAll("#rsvp-party-list .party-row").forEach(function(row){
-      var nameEl  = row.querySelector(".party-name");
-      var relEl   = row.querySelector(".party-rel");
-      var emailEl = row.querySelector(".party-email");
-      var pname   = nameEl  ? nameEl.value.trim()  : "";
-      var rel     = relEl   ? relEl.value.trim()   : "";
-      var pemail  = emailEl ? emailEl.value.trim() : "";
-      if(pname){
-        members.push(pname + (rel ? " (" + rel + ")" : "") + (pemail ? " [" + pemail + "]" : ""));
-      }
-    });
-    pizzaGF      = parseInt(document.getElementById("rsvp-pizza-gf").value, 10) || 0;
-    pizzaVegan   = parseInt(document.getElementById("rsvp-pizza-vegan").value, 10) || 0;
-    pizzaGFVegan = parseInt(document.getElementById("rsvp-pizza-gfvegan").value, 10) || 0;
-    listPermission = (document.querySelector('input[name="rsvp-permission"]:checked') || {value:"No"}).value;
-  }
-
-  // Party total is the registrant plus everyone they listed (0 if not attending).
-  var total = attending === "Yes" ? members.length + 1 : 0;
+  document.querySelectorAll("#rsvp-party-list .party-row").forEach(function(row){
+    var nameEl  = row.querySelector(".party-name");
+    var relEl   = row.querySelector(".party-rel");
+    var emailEl = row.querySelector(".party-email");
+    var name    = nameEl  ? nameEl.value.trim()  : "";
+    var rel     = relEl   ? relEl.value.trim()   : "";
+    var email   = emailEl ? emailEl.value.trim() : "";
+    if(name){
+      var entry = name + (rel ? " (" + rel + ")" : "") + (email ? " [" + email + "]" : "");
+      members.push(entry);
+    }
+  });
 
   btn.textContent = "Sending...";
   btn.disabled = true;
@@ -572,18 +518,10 @@ function submitRSVP(){
     phone:        document.getElementById("rsvp-phone").value.trim(),
     address:      document.getElementById("rsvp-address").value.trim(),
     years:        years,
-    attending:    attending,
     role:         roles.join(", "),
     partyMembers: members.join(" | "),
-    totalInParty: total,
-    pizzaGF:       pizzaGF,
-    pizzaVegan:    pizzaVegan,
-    pizzaGFVegan:  pizzaGFVegan,
-    notesPrivate: document.getElementById("rsvp-notes-private").value.trim(),
-    notesPublic:  document.getElementById("rsvp-notes-public").value.trim(),
-    listPermission: listPermission,
-    editToken:    rsvpEditToken || "",
-    siteUrl:      window.location.origin + window.location.pathname
+    notes:        document.getElementById("rsvp-notes").value.trim(),
+    listPermission: (document.querySelector('input[name="rsvp-permission"]:checked') || {value:"No"}).value
   };
 
   fetch(RSVP_WEBHOOK, {
@@ -593,72 +531,17 @@ function submitRSVP(){
     body: JSON.stringify(payload)
   })
   .then(function(){
-    var msg;
-    if(attending === "No"){
-      msg = isUpdate
-        ? "&#10003; <strong>Your RSVP has been updated.</strong> We&rsquo;re sorry you can&rsquo;t make it &mdash; thank you for letting us know."
-        : "&#10003; <strong>Thank you for letting us know.</strong> We&rsquo;re sorry you can&rsquo;t make it to Spiralpalooza, but we&rsquo;re grateful you responded.";
-    } else {
-      msg = isUpdate
-        ? "&#10003; <strong>Your RSVP has been updated</strong> &mdash; we can&rsquo;t wait to see you at Spiralpalooza on October 3rd!"
-        : "&#10003; <strong>Thank you!</strong> Your RSVP is in &mdash; we can&rsquo;t wait to see you at Spiralpalooza on October 3rd!";
-    }
-    var msgEl = document.getElementById("rsvp-success-msg");
-    msgEl.innerHTML = msg;
-    msgEl.style.display = "block";
+    document.getElementById("rsvp-success-msg").style.display = "block";
     document.getElementById("rsvp-form-ui").style.display = "none";
-    document.getElementById("rsvp-edit-banner").style.display = "none";
-    msgEl.scrollIntoView({behavior:"smooth",block:"start"});
+    document.getElementById("rsvp-success-msg").scrollIntoView({behavior:"smooth",block:"start"});
   })
   .catch(function(){
     errEl.textContent = "Something went wrong. Please try again or email childrenfirstmail@gmail.com.";
     errEl.style.display = "block";
-    btn.textContent = resetLabel;
+    btn.textContent = "Submit RSVP →";
     btn.disabled = false;
     btn.style.opacity = "1";
   });
-}
-
-// Pre-fill the RSVP form from an existing record (edit mode).
-function populateRSVPForm(r){
-  r = r || {};
-  function setVal(id, v){ var el = document.getElementById(id); if(el) el.value = (v == null ? "" : v); }
-  setVal("rsvp-fname", r.firstName);
-  setVal("rsvp-lname", r.lastName);
-  setVal("rsvp-email", r.email);
-  setVal("rsvp-phone", r.phone);
-  setVal("rsvp-address", r.address);
-  setVal("rsvp-years", r.years);
-  setVal("rsvp-notes-private", r.notesPrivate);
-  setVal("rsvp-notes-public", r.notesPublic);
-  setVal("rsvp-pizza-gf", r.pizzaGF != null ? r.pizzaGF : 0);
-  setVal("rsvp-pizza-vegan", r.pizzaVegan != null ? r.pizzaVegan : 0);
-  setVal("rsvp-pizza-gfvegan", r.pizzaGFVegan != null ? r.pizzaGFVegan : 0);
-
-  // Roles (stored ", "-joined)
-  var roleSet = {};
-  String(r.role || "").split(", ").forEach(function(x){ if(x) roleSet[x] = true; });
-  document.querySelectorAll(".rsvp-role").forEach(function(cb){ cb.checked = !!roleSet[cb.value]; });
-
-  // Attending (default Yes if unset)
-  var att = r.attending === "No" ? "No" : "Yes";
-  document.querySelectorAll('input[name="rsvp-attending"]').forEach(function(rb){ rb.checked = (rb.value === att); });
-
-  // List permission (default No)
-  var perm = r.listPermission === "Yes" ? "Yes" : "No";
-  document.querySelectorAll('input[name="rsvp-permission"]').forEach(function(rb){ rb.checked = (rb.value === perm); });
-
-  // Party members
-  var list = document.getElementById("rsvp-party-list");
-  list.innerHTML = "";
-  var party = r.party || [];
-  if(party.length === 0){
-    list.appendChild(makePartyRow());
-  } else {
-    party.forEach(function(m){ list.appendChild(makePartyRow(m.name, m.rel, m.email)); });
-  }
-
-  updateAttendingUI();
 }
 </script>
 
@@ -710,19 +593,8 @@ function populateRSVPForm(r){
 
     <div class="form-note green">&#10003; Use this form to place your order. We&rsquo;ll be in touch about payment details after ordering.</div>
 
-    <div id="shirt-edit-banner" style="display:none;background:var(--cf-green-light);border:1.5px solid var(--cf-orange);border-radius:6px;padding:0.85rem 1.1rem;margin-bottom:1rem;font-size:14px;color:var(--cf-text);line-height:1.55">
-      &#9998; <strong>You&rsquo;re updating your order.</strong> Make any changes below and resubmit &mdash; your previous order will replace what we have on file.
-    </div>
-
-    <div id="shirt-edit-loading" style="display:none;font-size:14px;color:var(--cf-muted);font-style:italic;margin-bottom:1rem">Loading your order&hellip;</div>
-
-    <div id="shirt-edit-error" style="display:none;background:#fde8e8;border:1px solid #e3a9a9;border-radius:4px;padding:1rem 1.25rem;color:#a32d2d;font-size:14px;margin-bottom:1rem;line-height:1.6">
-      We couldn&rsquo;t find that order &mdash; the link may be incorrect or out of date.
-      <div style="margin-top:0.6rem"><button onclick="window.location.href=window.location.pathname + '#shirts'" style="background:var(--cf-blue);color:#fff;border:none;padding:8px 16px;border-radius:4px;font-family:var(--sans);font-size:13px;font-weight:700;cursor:pointer">Start a new order</button></div>
-    </div>
-
     <!-- Custom shirt order UI -->
-    <form id="shirt-form-ui" onsubmit="return false">
+    <div id="shirt-form-ui">
       <div style="background:#fff;border:1.5px solid var(--cf-border);border-radius:6px;overflow:hidden;margin-bottom:1rem">
 
         <!-- Name & Email -->
@@ -730,11 +602,11 @@ function populateRSVPForm(r){
           <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem">
             <div>
               <label style="display:block;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;color:var(--cf-muted);margin-bottom:5px">Full Name *</label>
-              <input type="text" id="shirt-name" name="name" autocomplete="name" placeholder="Your name" style="width:100%;padding:8px 10px;border:1.5px solid var(--cf-border);border-radius:4px;font-family:var(--sans);font-size:14px;outline:none">
+              <input type="text" id="shirt-name" placeholder="Your name" style="width:100%;padding:8px 10px;border:1.5px solid var(--cf-border);border-radius:4px;font-family:var(--sans);font-size:14px;outline:none">
             </div>
             <div>
               <label style="display:block;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;color:var(--cf-muted);margin-bottom:5px">Email *</label>
-              <input type="email" id="shirt-email" name="email" autocomplete="email" placeholder="your@email.com" style="width:100%;padding:8px 10px;border:1.5px solid var(--cf-border);border-radius:4px;font-family:var(--sans);font-size:14px;outline:none">
+              <input type="email" id="shirt-email" placeholder="your@email.com" style="width:100%;padding:8px 10px;border:1.5px solid var(--cf-border);border-radius:4px;font-family:var(--sans);font-size:14px;outline:none">
             </div>
           </div>
         </div>
@@ -760,11 +632,12 @@ function populateRSVPForm(r){
 
       <div id="shirt-error" style="display:none;color:#a32d2d;font-size:13px;margin-bottom:0.75rem;padding:0.5rem 0.75rem;background:#fde8e8;border-radius:4px"></div>
 
-      <button type="button" onclick="submitShirtOrder()" id="shirt-submit-btn" style="background:var(--cf-green);color:#fff;border:none;padding:11px 28px;border-radius:4px;font-family:var(--sans);font-size:14px;font-weight:700;cursor:pointer;transition:background 0.15s">Place Order &rarr;</button>
+      <button onclick="submitShirtOrder()" id="shirt-submit-btn" style="background:var(--cf-green);color:#fff;border:none;padding:11px 28px;border-radius:4px;font-family:var(--sans);font-size:14px;font-weight:700;cursor:pointer;transition:background 0.15s">Place Order &rarr;</button>
 
-      <!-- Filled in by submitShirtOrder (message differs for a new order vs. an update). -->
-      <div id="shirt-success-msg" style="display:none;background:#eaf4ee;border:1px solid #a8d9b5;border-radius:4px;padding:1rem 1.25rem;color:#2e6b40;font-size:14px;margin-top:1rem;line-height:1.6"></div>
-    </form>
+      <div id="shirt-success-msg" style="display:none;background:#eaf4ee;border:1px solid #a8d9b5;border-radius:4px;padding:1rem 1.25rem;color:#2e6b40;font-size:14px;margin-top:1rem;line-height:1.6">
+        &#10003; <strong>Order received!</strong> We&rsquo;ll be in touch about payment soon. Thank you! If you need to change or add to your order, just submit this form again and add a note, or email <a href="mailto:childrenfirstmail@gmail.com" style="color:#2e6b40">childrenfirstmail@gmail.com</a>.
+      </div>
+    </div>
 
     <!-- Hidden iframe for form submission -->
     <iframe id="shirt-submit-iframe" name="shirt-submit-iframe" style="display:none" title="Form submission"></iframe>
@@ -772,11 +645,6 @@ function populateRSVPForm(r){
 </section>
 
 <script>
-var SHIRT_WEBHOOK = "https://script.google.com/macros/s/AKfycbzaneNnFp6rBkGNFB4BiaD7G7T-Dq1ibe9bIhVOJDq3GQDEWmTZWwcW2eA7daD6-PfIxQ/exec";
-
-// Set when the page is opened via an emailed edit link (?edit=<token>&type=shirt); null for a new order.
-var shirtEditToken = null;
-
 // T-shirt size data
 var shirtSizes = [
   {category: "Adult Unisex", sizes: ["Adult XS","Adult Small","Adult Medium","Adult Large","Adult XL","Adult 2XL","Adult 3XL"]},
@@ -795,7 +663,9 @@ function buildShirtTable(){
       html += "<tr style='background:" + bg + ";border-bottom:1px solid #f0ede8'>" +
         "<td style='padding:7px 14px;color:var(--cf-text)'>" + size + "</td>" +
         "<td style='text-align:center;padding:7px 14px'>" +
-          "<input type='number' inputmode='numeric' min='0' step='1' value='0' id='qty_" + safeId + "' style='padding:5px 8px;border:1.5px solid var(--cf-border);border-radius:4px;font-family:var(--sans);font-size:13px;background:#fff;width:70px;text-align:center'>" +
+          "<select id='qty_" + safeId + "' style='padding:5px 8px;border:1.5px solid var(--cf-border);border-radius:4px;font-family:var(--sans);font-size:13px;background:#fff;cursor:pointer;width:70px'>" +
+          "<option value='0'>0</option><option value='1'>1</option><option value='2'>2</option><option value='3'>3</option><option value='4'>4</option><option value='5'>5</option>" +
+          "</select>" +
         "</td></tr>";
     });
   });
@@ -807,7 +677,7 @@ function submitShirtOrder(){
   var name = document.getElementById("shirt-name").value.trim();
   var email = document.getElementById("shirt-email").value.trim();
   var errEl = document.getElementById("shirt-error");
-  var btn = document.getElementById("shirt-submit-btn");
+  var btn = document.querySelector("[onclick='submitShirtOrder()']");
 
   if(!name || !email){
     errEl.textContent = "Please enter your name and email address.";
@@ -827,23 +697,19 @@ function submitShirtOrder(){
   shirtSizes.forEach(function(group){
     group.sizes.forEach(function(size){
       var safeId = size.replace(/[^a-zA-Z0-9]/g,"_");
-      // Free-form number input: floor negatives/blanks/decimals to a non-negative integer.
-      var qty = Math.max(0, parseInt(document.getElementById("qty_" + safeId).value, 10) || 0);
-      sizeData[size] = qty;
-      if(qty > 0) hasItems = true;
+      var qty = document.getElementById("qty_" + safeId).value;
+      sizeData[size] = parseInt(qty) || 0;
+      if(qty !== "0") hasItems = true;
     });
   });
 
   if(!hasItems){
-    errEl.textContent = "Please enter a quantity of at least 1 for at least one size.";
+    errEl.textContent = "Please select a quantity of at least 1 for at least one size.";
     errEl.style.display = "block";
     return;
   }
 
   var notes = document.getElementById("shirt-notes").value.trim();
-
-  var isUpdate   = !!shirtEditToken;
-  var resetLabel = isUpdate ? "Update Order →" : "Place Order →";
 
   // Disable button and show sending state
   btn.textContent = "Sending...";
@@ -854,12 +720,10 @@ function submitShirtOrder(){
     name: name,
     email: email,
     sizes: sizeData,
-    notes: notes,
-    editToken: shirtEditToken || "",
-    siteUrl: window.location.origin + window.location.pathname
+    notes: notes
   };
 
-  fetch(SHIRT_WEBHOOK, {
+  fetch("https://script.google.com/macros/s/AKfycbzaneNnFp6rBkGNFB4BiaD7G7T-Dq1ibe9bIhVOJDq3GQDEWmTZWwcW2eA7daD6-PfIxQ/exec", {
     method: "POST",
     mode: "no-cors",
     headers: {"Content-Type": "application/json"},
@@ -867,42 +731,22 @@ function submitShirtOrder(){
   })
   .then(function(){
     // no-cors means we can't read the response, but if we get here it sent
-    var msgEl = document.getElementById("shirt-success-msg");
-    msgEl.innerHTML = isUpdate
-      ? "&#10003; <strong>Your order has been updated.</strong> We&rsquo;ll be in touch about payment soon. Thank you!"
-      : "&#10003; <strong>Order received!</strong> Check your email for a confirmation with a link to change your order anytime. We&rsquo;ll be in touch about payment soon. Thank you!";
-    msgEl.style.display = "block";
-    // Remove the submit button so the order can't be resent; leave the filled-in
-    // form visible above as a receipt, with the confirmation at the bottom.
-    btn.style.display = "none";
-    document.getElementById("shirt-edit-banner").style.display = "none";
-    msgEl.scrollIntoView({behavior:"smooth", block:"nearest"});
+    document.getElementById("shirt-success-msg").style.display = "block";
+    document.getElementById("shirt-success-msg").scrollIntoView({behavior:"smooth", block:"start"});
+    document.getElementById("shirt-name").value = "";
+    document.getElementById("shirt-email").value = "";
+    document.getElementById("shirt-notes").value = "";
+    buildShirtTable();
+    btn.textContent = "Place Order →";
+    btn.disabled = false;
+    btn.style.opacity = "1";
   })
   .catch(function(err){
     errEl.textContent = "Something went wrong. Please try again or email childrenfirstmail@gmail.com.";
     errEl.style.display = "block";
-    btn.textContent = resetLabel;
+    btn.textContent = "Place Order →";
     btn.disabled = false;
     btn.style.opacity = "1";
-  });
-}
-
-// Pre-fill the shirt form from an existing order (edit mode).
-function populateShirtForm(r){
-  r = r || {};
-  document.getElementById("shirt-name").value  = r.name  == null ? "" : r.name;
-  document.getElementById("shirt-email").value = r.email == null ? "" : r.email;
-  document.getElementById("shirt-notes").value = r.notes == null ? "" : r.notes;
-
-  buildShirtTable();   // reset all inputs to 0, then apply saved quantities
-  var sizes = r.sizes || {};
-  shirtSizes.forEach(function(group){
-    group.sizes.forEach(function(size){
-      var safeId = size.replace(/[^a-zA-Z0-9]/g,"_");
-      var input = document.getElementById("qty_" + safeId);
-      // Number input takes any non-negative quantity, so saved values prefill exactly.
-      if(input) input.value = Math.max(0, parseInt(sizes[size], 10) || 0);
-    });
   });
 }
 </script>
@@ -914,10 +758,10 @@ function populateShirtForm(r){
     <div class="page-sub">Help make Spiralpalooza unforgettable! Pick any roles that interest you &mdash; you can sign up for multiple. We&rsquo;ll be in touch with details.</div>
 
     <div id="vol-success-msg" style="display:none;background:#eaf4ee;border:1px solid #a8d9b5;border-radius:4px;padding:1rem 1.25rem;color:#2e6b40;font-size:14px;margin-bottom:1rem;line-height:1.6">
-      &#10003; <strong>Thank you for volunteering!</strong> We&rsquo;ll be in touch soon with details.
+      &#10003; <strong>Thank you for volunteering!</strong> We&rsquo;ll be in touch before October 3rd with details.
     </div>
 
-    <form id="vol-form-ui" onsubmit="return false">
+    <div id="vol-form-ui">
       <!-- Role cards -->
       <div style="background:#fff;border:1.5px solid var(--cf-border);border-radius:6px;overflow:hidden;margin-bottom:1rem">
         <div style="background:var(--cf-orange);color:#fff;padding:8px 14px;font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px">Select Your Volunteer Roles</div>
@@ -1031,19 +875,23 @@ function populateShirtForm(r){
           <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-bottom:0.85rem">
             <div>
               <label style="display:block;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;color:var(--cf-muted);margin-bottom:5px">Full Name *</label>
-              <input type="text" id="vol-name" name="name" autocomplete="name" placeholder="Your name" style="width:100%;padding:8px 10px;border:1.5px solid var(--cf-border);border-radius:4px;font-family:var(--sans);font-size:14px;outline:none">
+              <input type="text" id="vol-name" placeholder="Your name" style="width:100%;padding:8px 10px;border:1.5px solid var(--cf-border);border-radius:4px;font-family:var(--sans);font-size:14px;outline:none">
             </div>
             <div>
               <label style="display:block;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;color:var(--cf-muted);margin-bottom:5px">Email *</label>
-              <input type="email" id="vol-email" name="email" autocomplete="email" placeholder="your@email.com" style="width:100%;padding:8px 10px;border:1.5px solid var(--cf-border);border-radius:4px;font-family:var(--sans);font-size:14px;outline:none">
+              <input type="email" id="vol-email" placeholder="your@email.com" style="width:100%;padding:8px 10px;border:1.5px solid var(--cf-border);border-radius:4px;font-family:var(--sans);font-size:14px;outline:none">
             </div>
           </div>
           <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-bottom:0.85rem">
             <div>
               <label style="display:block;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;color:var(--cf-muted);margin-bottom:5px">Phone</label>
-              <input type="tel" id="vol-phone" name="phone" autocomplete="tel" placeholder="(919) 000-0000" style="width:100%;padding:8px 10px;border:1.5px solid var(--cf-border);border-radius:4px;font-family:var(--sans);font-size:14px;outline:none">
+              <input type="tel" id="vol-phone" placeholder="(919) 000-0000" style="width:100%;padding:8px 10px;border:1.5px solid var(--cf-border);border-radius:4px;font-family:var(--sans);font-size:14px;outline:none">
             </div>
 
+          </div>
+          <div style="margin-bottom:0.85rem">
+            <label style="display:block;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;color:var(--cf-muted);margin-bottom:5px">Your connection to Children First</label>
+            <input type="text" id="vol-connection" placeholder="e.g. Parent 2016–2020, Teacher, Friend of family" style="width:100%;padding:8px 10px;border:1.5px solid var(--cf-border);border-radius:4px;font-family:var(--sans);font-size:14px;outline:none">
           </div>
           <div>
             <label style="display:block;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;color:var(--cf-muted);margin-bottom:5px">Anything else we should know?</label>
@@ -1054,9 +902,9 @@ function populateShirtForm(r){
 
       <div id="vol-error" style="display:none;color:#a32d2d;font-size:13px;margin-bottom:0.75rem;padding:0.5rem 0.75rem;background:#fde8e8;border-radius:4px"></div>
 
-      <button type="button" onclick="submitVolunteer()" id="vol-submit-btn" style="background:var(--cf-orange);color:#fff;border:none;padding:11px 28px;border-radius:4px;font-family:var(--sans);font-size:14px;font-weight:700;cursor:pointer;transition:background 0.15s">Sign Up to Volunteer &rarr;</button>
+      <button onclick="submitVolunteer()" id="vol-submit-btn" style="background:var(--cf-orange);color:#fff;border:none;padding:11px 28px;border-radius:4px;font-family:var(--sans);font-size:14px;font-weight:700;cursor:pointer;transition:background 0.15s">Sign Up to Volunteer &rarr;</button>
       <p style="font-size:12px;color:var(--cf-muted);margin-top:0.75rem;font-style:italic">&#10003; Your sign-up goes directly to our volunteer coordinator.</p>
-    </form>
+    </div>
   </div>
 </section>
 
@@ -1081,7 +929,6 @@ function populateShirtForm(r){
             <tr style="background:var(--cf-blue);color:#fff">
               <th style="text-align:left;padding:10px 16px;font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px">Name</th>
               <th style="text-align:left;padding:10px 16px;font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px">Years at Children First</th>
-              <th style="text-align:left;padding:10px 16px;font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px">Message</th>
             </tr>
           </thead>
           <tbody id="whocoming-tbody"></tbody>
@@ -1147,6 +994,7 @@ function submitVolunteer(){
     email:        email,
     phone:        document.getElementById("vol-phone").value.trim(),
     roles:        roles.join(", "),
+    connection:   document.getElementById("vol-connection").value.trim(),
     notes:        document.getElementById("vol-notes").value.trim()
   };
 
@@ -1191,19 +1039,6 @@ function go(i){
 function move(dir){go((ci+dir+sl.length)%sl.length)}
 setInterval(()=>move(1),8000);
 
-// Default "Who's Coming" layout: "grouped" (party members indented under host) or "flat"
-// (every guest as their own row). Override per-visit with ?wc=flat or ?wc=grouped in the URL.
-var WHOCOMING_DEFAULT_STYLE = "grouped";
-
-// Escape server-supplied text before inserting into innerHTML. Names and public
-// notes are attacker-controllable via the public RSVP endpoint, so the "who's
-// coming" list must escape them to avoid stored XSS.
-function escHtml(s){
-  return String(s == null ? "" : s)
-    .replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;")
-    .replace(/"/g,"&quot;").replace(/'/g,"&#39;");
-}
-
 // Navigation
 function loadWhoComing(){
   var loading = document.getElementById("whocoming-loading");
@@ -1222,54 +1057,20 @@ function loadWhoComing(){
   .then(function(r){ return r.json(); })
   .then(function(data){
     loading.style.display = "none";
-
-    // Pick render style: ?wc=flat or ?wc=grouped in the URL overrides the default below.
-    // To permanently switch the live site, change WHOCOMING_DEFAULT_STYLE.
-    var style = (new URLSearchParams(window.location.search).get("wc") || WHOCOMING_DEFAULT_STYLE);
-    // "grouped" needs the new script (data.grouped); fall back to flat if it isn't there yet.
-    if(style === "grouped" && !data.grouped) style = "flat";
-
-    var rows = "";
-    var total = 0;
-
-    if(style === "grouped"){
-      var grouped = data.grouped || [];
-      if(grouped.length === 0){ empty.style.display = "block"; return; }
-      // Sort alphabetically by host name; party members stay grouped under their host
-      grouped.sort(function(a,b){ return a.name.localeCompare(b.name); });
-      grouped.forEach(function(r, i){
-        var bg = i % 2 === 0 ? "#fff" : "#fafaf8";
-        rows += "<tr style='background:"+bg+";border-bottom:1px solid #f0ede8'>" +
-          "<td style='padding:9px 16px;color:var(--cf-text);font-weight:500'>" + escHtml(r.name) + "</td>" +
-          "<td style='padding:9px 16px;color:var(--cf-muted)'>" + (escHtml(r.years) || "&mdash;") + "</td>" +
-          "<td style='padding:9px 16px;color:var(--cf-text);font-style:italic'>" + escHtml(r.note) + "</td>" +
-          "</tr>";
-        total += 1;
-        (r.party || []).forEach(function(member){
-          rows += "<tr style='background:"+bg+";border-bottom:1px solid #f0ede8'>" +
-            "<td style='padding:5px 16px 5px 34px;color:var(--cf-muted)'>" + escHtml(member) + "</td>" +
-            "<td></td><td></td>" +
-            "</tr>";
-          total += 1;
-        });
-      });
-    } else {
-      // Flat style: every guest (host or party member) is its own alphabetical row.
-      var flat = data.rsvps || [];
-      if(flat.length === 0){ empty.style.display = "block"; return; }
-      flat.sort(function(a,b){ return a.name.localeCompare(b.name); });
-      flat.forEach(function(r, i){
-        var bg = i % 2 === 0 ? "#fff" : "#fafaf8";
-        rows += "<tr style='background:"+bg+";border-bottom:1px solid #f0ede8'>" +
-          "<td style='padding:9px 16px;color:var(--cf-text);font-weight:500'>" + escHtml(r.name) + "</td>" +
-          "<td style='padding:9px 16px;color:var(--cf-muted)'>" + (escHtml(r.years) || "&mdash;") + "</td>" +
-          "<td style='padding:9px 16px;color:var(--cf-text);font-style:italic'>" + escHtml(r.note) + "</td>" +
-          "</tr>";
-        total += 1;
-      });
+    if(!data.rsvps || data.rsvps.length === 0){
+      empty.style.display = "block";
+      return;
     }
-
-    tbody.innerHTML = rows;
+    // Sort alphabetically by last name
+    data.rsvps.sort(function(a,b){ return a.name.localeCompare(b.name); });
+    tbody.innerHTML = data.rsvps.map(function(r, i){
+      var bg = i % 2 === 0 ? "#fff" : "#fafaf8";
+      return "<tr style='background:"+bg+";border-bottom:1px solid #f0ede8'>" +
+        "<td style='padding:9px 16px;color:var(--cf-text);font-weight:500'>" + r.name + "</td>" +
+        "<td style='padding:9px 16px;color:var(--cf-muted)'>" + (r.years || "&mdash;") + "</td>" +
+        "</tr>";
+    }).join("");
+    var total = data.rsvps.length;
     count.textContent = total + " " + (total === 1 ? "person" : "people") + " coming so far!";
     list.style.display = "block";
   })
@@ -1320,85 +1121,8 @@ window.addEventListener('popstate', function(e){
   show(id, null, false);
 });
 
-function byId(id){ return document.getElementById(id); }
-
-// Registry of forms that support edit-by-link. To add a new one (shirts, volunteer),
-// give its section the same set of edit elements (<section>-edit-banner / -edit-loading
-// / -edit-error and a -form-ui wrapper + submit button), write a populate function, and
-// add an entry here. The emailed link carries ?edit=<token>&type=<key>.
-var EDIT_FORMS = {
-  rsvp: {
-    section:     'rsvp',
-    webhook:     RSVP_WEBHOOK,
-    formUi:      'rsvp-form-ui',
-    banner:      'rsvp-edit-banner',
-    loading:     'rsvp-edit-loading',
-    error:       'rsvp-edit-error',
-    submitBtn:   'rsvp-submit-btn',
-    updateLabel: 'Update RSVP →',
-    populate:    populateRSVPForm,
-    setToken:    function(t){ rsvpEditToken = t; }
-  },
-  shirt: {
-    section:     'shirts',
-    webhook:     SHIRT_WEBHOOK,
-    formUi:      'shirt-form-ui',
-    banner:      'shirt-edit-banner',
-    loading:     'shirt-edit-loading',
-    error:       'shirt-edit-error',
-    submitBtn:   'shirt-submit-btn',
-    updateLabel: 'Update Order →',
-    populate:    populateShirtForm,
-    setToken:    function(t){ shirtEditToken = t; }
-  }
-};
-
-// Generic edit-mode entry: fetch the existing record for a token, pre-fill, and
-// switch the form into update mode. Backend returns {found, record}.
-function enterEditMode(type, token){
-  var cfg = EDIT_FORMS[type];
-  if(!cfg) return;
-
-  cfg.setToken(token);
-  show(cfg.section, null, false);
-  byId(cfg.banner).style.display  = "block";
-  byId(cfg.error).style.display   = "none";
-  byId(cfg.loading).style.display = "block";
-  byId(cfg.formUi).style.display  = "none";
-  byId(cfg.submitBtn).textContent = cfg.updateLabel;
-
-  fetch(cfg.webhook + "?edit=" + encodeURIComponent(token), {method:"GET"})
-  .then(function(res){ return res.json(); })
-  .then(function(data){
-    byId(cfg.loading).style.display = "none";
-    if(!data || !data.found){
-      byId(cfg.banner).style.display = "none";
-      byId(cfg.error).style.display  = "block";
-      return;
-    }
-    cfg.populate(data.record);
-    byId(cfg.formUi).style.display = "block";
-  })
-  .catch(function(){
-    byId(cfg.loading).style.display = "none";
-    byId(cfg.banner).style.display  = "none";
-    byId(cfg.error).style.display   = "block";
-  });
-}
-
-// On first load, check for an edit link (?edit=<token>&type=<form>) first, then a hash.
+// On first load, check for hash in URL
 (function(){
-  var params = new URLSearchParams(window.location.search);
-  var token = params.get('edit');
-  if(token){
-    var type = params.get('type') || 'rsvp';   // default keeps older RSVP-only links working
-    var cfg = EDIT_FORMS[type];
-    if(cfg){
-      history.replaceState({page:cfg.section}, '', '#' + cfg.section);
-      enterEditMode(type, token);
-      return;
-    }
-  }
   var hash = window.location.hash.replace('#','');
   var valid = ['home','rsvp','shirts','volunteer','whocoming'];
   if(hash && valid.indexOf(hash) > -1){
@@ -1418,5 +1142,54 @@ function toggleEmbed(id){
   fallback.style.display=isHidden?'none':'block';
 }
 </script>
+</div>
+
+<script>
+function checkPassword(){
+  var input = document.getElementById("gate-password").value.trim().toLowerCase();
+  var errEl = document.getElementById("gate-error");
+  // Password check — replace 'correctpassword' with the actual answer
+  var correct = ["spiralpalooza"];
+  if(correct.indexOf(input) > -1){
+    document.getElementById("password-gate").style.display = "none";
+    document.getElementById("main-site").style.display = "block";
+    // Store in session so they don't have to re-enter on refresh
+    sessionStorage.setItem("spiralpalooza_auth", "true");
+  } else {
+    errEl.style.display = "block";
+    document.getElementById("gate-password").value = "";
+    document.getElementById("gate-password").focus();
+  }
+}
+
+// Check session storage on load
+if(sessionStorage.getItem("spiralpalooza_auth") === "true"){
+  document.getElementById("password-gate").style.display = "none";
+  document.getElementById("main-site").style.display = "block";
+}
+</script>
+
+</div>
+
+<script>
+function checkPassword(){
+  var input = document.getElementById("gate-password").value.trim().toLowerCase();
+  var correct = ["spiralpalooza"];
+  if(correct.indexOf(input) > -1){
+    document.getElementById("password-gate").style.display = "none";
+    document.getElementById("main-site").style.display = "block";
+    sessionStorage.setItem("spiralpalooza_auth","true");
+  } else {
+    document.getElementById("gate-error").style.display = "block";
+    document.getElementById("gate-password").value = "";
+    document.getElementById("gate-password").focus();
+  }
+}
+if(sessionStorage.getItem("spiralpalooza_auth")==="true"){
+  document.getElementById("password-gate").style.display = "none";
+  document.getElementById("main-site").style.display = "block";
+}
+</script>
+
 </body>
 </html>
