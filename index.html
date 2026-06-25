@@ -138,37 +138,7 @@ section{display:none}section.active{display:block}
 </style>
 </head>
 <body>
-<!-- Password Gate -->
-<div id="password-gate" style="display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;background:var(--cf-cream);padding:2rem;text-align:center">
-  <div style="max-width:420px;width:100%">
-    <div style="margin-bottom:1.5rem">
-      <div style="font-family:var(--sans);font-size:26px;font-weight:700;color:var(--cf-blue);line-height:1.2">Spiralpalooza</div>
-      <div style="font-family:var(--sans);font-size:14px;color:var(--cf-muted);margin-top:4px">Friends of the Family Remembering Party</div>
-    </div>
-    <div style="background:#fff;border:1.5px solid var(--cf-border);border-radius:8px;padding:2rem;box-shadow:0 2px 12px rgba(0,0,0,0.06)">
-      <p style="font-family:var(--sans);font-size:15px;color:var(--cf-text);margin-bottom:0.5rem;font-weight:700">This site is for the Children First community.</p>
-      <p style="font-family:var(--sans);font-size:13px;color:var(--cf-muted);margin-bottom:1.5rem;line-height:1.6">Please enter the password to continue.</p>
-      <div style="background:var(--cf-blue-light);border:1px solid var(--cf-border);border-radius:4px;padding:0.75rem 1rem;margin-bottom:1.25rem;font-family:var(--sans);font-size:13px;color:var(--cf-text);text-align:left">
-        <strong>Hint:</strong> What is Donna&rsquo;s Children First sign (lower case letters)?
-      </div>
-      <input type="password" id="gate-password" placeholder="Enter password"
-        style="width:100%;padding:10px 14px;border:1.5px solid var(--cf-border);border-radius:4px;font-family:var(--sans);font-size:15px;outline:none;margin-bottom:0.75rem;text-align:center;letter-spacing:2px"
-        onkeydown="if(event.key==='Enter') checkPassword()">
-      <div id="gate-error" style="display:none;color:#a32d2d;font-size:13px;margin-bottom:0.75rem;font-family:var(--sans)">
-        Incorrect password. Try again!
-      </div>
-      <button onclick="checkPassword()" style="width:100%;background:var(--cf-blue);color:#fff;border:none;padding:11px;border-radius:4px;font-family:var(--sans);font-size:14px;font-weight:700;cursor:pointer">
-        Enter &rarr;
-      </button>
-    </div>
-    <p style="font-family:var(--sans);font-size:12px;color:var(--cf-muted);margin-top:1.25rem;line-height:1.6">
-      Questions? Contact Donna at <a href="mailto:childrenfirstmail@gmail.com" style="color:var(--cf-blue)">childrenfirstmail@gmail.com</a>
-    </p>
-  </div>
-</div>
 
-<!-- Main site -->
-<div id="main-site" style="display:none">
 
 <nav>
   <a href="https://www.childrenfirstschool.org" target="_blank" class="logo" style="text-decoration:none">
@@ -1144,52 +1114,7 @@ function toggleEmbed(id){
 </script>
 </div>
 
-<script>
-function checkPassword(){
-  var input = document.getElementById("gate-password").value.trim().toLowerCase();
-  var errEl = document.getElementById("gate-error");
-  // Password check — replace 'correctpassword' with the actual answer
-  var correct = ["spiralpalooza"];
-  if(correct.indexOf(input) > -1){
-    document.getElementById("password-gate").style.display = "none";
-    document.getElementById("main-site").style.display = "block";
-    // Store in session so they don't have to re-enter on refresh
-    sessionStorage.setItem("spiralpalooza_auth", "true");
-  } else {
-    errEl.style.display = "block";
-    document.getElementById("gate-password").value = "";
-    document.getElementById("gate-password").focus();
-  }
-}
-
-// Check session storage on load
-if(sessionStorage.getItem("spiralpalooza_auth") === "true"){
-  document.getElementById("password-gate").style.display = "none";
-  document.getElementById("main-site").style.display = "block";
-}
-</script>
-
 </div>
-
-<script>
-function checkPassword(){
-  var input = document.getElementById("gate-password").value.trim().toLowerCase();
-  var correct = ["spiralpalooza"];
-  if(correct.indexOf(input) > -1){
-    document.getElementById("password-gate").style.display = "none";
-    document.getElementById("main-site").style.display = "block";
-    sessionStorage.setItem("spiralpalooza_auth","true");
-  } else {
-    document.getElementById("gate-error").style.display = "block";
-    document.getElementById("gate-password").value = "";
-    document.getElementById("gate-password").focus();
-  }
-}
-if(sessionStorage.getItem("spiralpalooza_auth")==="true"){
-  document.getElementById("password-gate").style.display = "none";
-  document.getElementById("main-site").style.display = "block";
-}
-</script>
 
 </body>
 </html>
