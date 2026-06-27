@@ -295,7 +295,7 @@ section{display:none}section.active{display:block}
     </div>
 
     <div id="rsvp-success-msg" style="display:none;background:#eaf4ee;border:1px solid #a8d9b5;border-radius:4px;padding:1rem 1.25rem;color:#2e6b40;font-size:14px;margin-bottom:1rem;line-height:1.6">
-      &#10003; <strong>Thank you!</strong> Your RSVP is in &mdash; we can&rsquo;t wait to see you at Spiralpalooza on October 3rd!
+      &#10003; <strong>Thank you! Your RSVP is in.</strong> Check your email for a confirmation with a link to change your RSVP anytime. We can&rsquo;t wait to see you at Spiralpalooza on October 3rd!
     </div>
 
     <div id="rsvp-edit-banner" style="display:none;background:var(--cf-green-light);border:1.5px solid var(--cf-orange);border-radius:6px;padding:0.85rem 1.1rem;margin-bottom:1rem;font-size:14px;color:var(--cf-text);line-height:1.55">
@@ -597,11 +597,11 @@ function submitRSVP(){
     if(attending === "No"){
       msg = isUpdate
         ? "&#10003; <strong>Your RSVP has been updated.</strong> We&rsquo;re sorry you can&rsquo;t make it &mdash; thank you for letting us know."
-        : "&#10003; <strong>Thank you for letting us know.</strong> We&rsquo;re sorry you can&rsquo;t make it to Spiralpalooza, but we&rsquo;re grateful you responded.";
+        : "&#10003; <strong>Thank you for letting us know.</strong> We&rsquo;re sorry you can&rsquo;t make it to Spiralpalooza. Check your email for a confirmation with a link to update your RSVP if your plans change.";
     } else {
       msg = isUpdate
         ? "&#10003; <strong>Your RSVP has been updated</strong> &mdash; we can&rsquo;t wait to see you at Spiralpalooza on October 3rd!"
-        : "&#10003; <strong>Thank you!</strong> Your RSVP is in &mdash; we can&rsquo;t wait to see you at Spiralpalooza on October 3rd!";
+        : "&#10003; <strong>Thank you! Your RSVP is in.</strong> Check your email for a confirmation with a link to change your RSVP anytime. We can&rsquo;t wait to see you at Spiralpalooza on October 3rd!";
     }
     var msgEl = document.getElementById("rsvp-success-msg");
     msgEl.innerHTML = msg;
