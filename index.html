@@ -917,6 +917,17 @@ function populateShirtForm(r){
       &#10003; <strong>Thank you for volunteering!</strong> We&rsquo;ll be in touch soon with details.
     </div>
 
+    <div id="vol-edit-banner" style="display:none;background:var(--cf-green-light);border:1.5px solid var(--cf-orange);border-radius:6px;padding:0.85rem 1.1rem;margin-bottom:1rem;font-size:14px;color:var(--cf-text);line-height:1.55">
+      &#9998; <strong>You&rsquo;re updating your sign-up.</strong> Adjust your roles or details below and resubmit &mdash; your previous sign-up will replace what we have on file.
+    </div>
+
+    <div id="vol-edit-loading" style="display:none;font-size:14px;color:var(--cf-muted);font-style:italic;margin-bottom:1rem">Loading your sign-up&hellip;</div>
+
+    <div id="vol-edit-error" style="display:none;background:#fde8e8;border:1px solid #e3a9a9;border-radius:4px;padding:1rem 1.25rem;color:#a32d2d;font-size:14px;margin-bottom:1rem;line-height:1.6">
+      We couldn&rsquo;t find that sign-up &mdash; the link may be incorrect or out of date.
+      <div style="margin-top:0.6rem"><button onclick="window.location.href=window.location.pathname + '#volunteer'" style="background:var(--cf-blue);color:#fff;border:none;padding:8px 16px;border-radius:4px;font-family:var(--sans);font-size:13px;font-weight:700;cursor:pointer">Start a new sign-up</button></div>
+    </div>
+
     <form id="vol-form-ui" onsubmit="return false">
       <!-- Role cards -->
       <div style="background:#fff;border:1.5px solid var(--cf-border);border-radius:6px;overflow:hidden;margin-bottom:1rem">
@@ -1099,6 +1110,9 @@ function populateShirtForm(r){
 <script>
 var VOL_WEBHOOK = "https://script.google.com/macros/s/AKfycbx6plWSSjGWMvA80rQbH2EVOHlaOE0cjMNmuUzjejwUQ01Jq9Yd6YDb7gpQgTWswAJP/exec";
 
+// Set when the page is opened via an emailed edit link (?edit=<token>&type=volunteer); null for a new sign-up.
+var volEditToken = null;
+
 // Highlight role cards when checked
 document.querySelectorAll(".vol-role-card input").forEach(function(cb){
   cb.addEventListener("change", function(){
@@ -1128,15 +1142,16 @@ function submitVolunteer(){
     errEl.style.display = "block"; return;
   }
 
+  // Roles are optional: editing a sign-up to uncheck everything (withdrawing from
+  // all shifts) is a valid submission.
   var roles = [];
   document.querySelectorAll(".vol-role-card input:checked").forEach(function(cb){
     roles.push(cb.value);
   });
-  if(roles.length === 0){
-    errEl.textContent = "Please select at least one volunteer role.";
-    errEl.style.display = "block"; return;
-  }
   errEl.style.display = "none";
+
+  var isUpdate   = !!volEditToken;
+  var resetLabel = isUpdate ? "Update Sign-Up →" : "Sign Up to Volunteer →";
 
   btn.textContent = "Sending...";
   btn.disabled = true;
@@ -1147,7 +1162,9 @@ function submitVolunteer(){
     email:        email,
     phone:        document.getElementById("vol-phone").value.trim(),
     roles:        roles.join(", "),
-    notes:        document.getElementById("vol-notes").value.trim()
+    notes:        document.getElementById("vol-notes").value.trim(),
+    editToken:    volEditToken || "",
+    siteUrl:      window.location.origin + window.location.pathname
   };
 
   fetch(VOL_WEBHOOK, {
@@ -1157,16 +1174,38 @@ function submitVolunteer(){
     body: JSON.stringify(payload)
   })
   .then(function(){
-    document.getElementById("vol-success-msg").style.display = "block";
+    var msgEl = document.getElementById("vol-success-msg");
+    msgEl.innerHTML = isUpdate
+      ? "&#10003; <strong>Your sign-up has been updated.</strong> Thank you! We&rsquo;ll be in touch soon with details."
+      : "&#10003; <strong>Thank you for volunteering!</strong> Check your email for a confirmation with a link to change your roles anytime. We&rsquo;ll be in touch soon with details.";
+    msgEl.style.display = "block";
     document.getElementById("vol-form-ui").style.display = "none";
-    document.getElementById("vol-success-msg").scrollIntoView({behavior:"smooth",block:"start"});
+    document.getElementById("vol-edit-banner").style.display = "none";
+    msgEl.scrollIntoView({behavior:"smooth",block:"start"});
   })
   .catch(function(){
     errEl.textContent = "Something went wrong. Please try again or email childrenfirstmail@gmail.com.";
     errEl.style.display = "block";
-    btn.textContent = "Sign Up to Volunteer →";
+    btn.textContent = resetLabel;
     btn.disabled = false;
     btn.style.opacity = "1";
+  });
+}
+
+// Pre-fill the volunteer form from an existing sign-up (edit mode).
+function populateVolunteerForm(r){
+  r = r || {};
+  document.getElementById("vol-name").value  = r.name  == null ? "" : r.name;
+  document.getElementById("vol-email").value = r.email == null ? "" : r.email;
+  document.getElementById("vol-phone").value = r.phone == null ? "" : r.phone;
+  document.getElementById("vol-notes").value = r.notes == null ? "" : r.notes;
+
+  // Roles arrive as the ", "-joined string we stored. Re-check the matching cards
+  // and fire change so the card-highlight styling re-applies.
+  var saved = String(r.roles == null ? "" : r.roles).split(", ").map(function(s){ return s.trim(); });
+  document.querySelectorAll(".vol-role-card input").forEach(function(cb){
+    cb.checked = saved.indexOf(cb.value) > -1;
+    cb.dispatchEvent(new Event("change"));
   });
 }
 </script>
@@ -1350,6 +1389,18 @@ var EDIT_FORMS = {
     updateLabel: 'Update Order →',
     populate:    populateShirtForm,
     setToken:    function(t){ shirtEditToken = t; }
+  },
+  volunteer: {
+    section:     'volunteer',
+    webhook:     VOL_WEBHOOK,
+    formUi:      'vol-form-ui',
+    banner:      'vol-edit-banner',
+    loading:     'vol-edit-loading',
+    error:       'vol-edit-error',
+    submitBtn:   'vol-submit-btn',
+    updateLabel: 'Update Sign-Up →',
+    populate:    populateVolunteerForm,
+    setToken:    function(t){ volEditToken = t; }
   }
 };
 

@@ -11,46 +11,652 @@
  * Volunteers sheet).
  *
  * Endpoints:
- *   doPost  — append a new volunteer signup
+ *   doPost  — append a new signup, or update an existing one by edit token
+ *   doGet   — ?edit=<token> returns one signup for the edit form;
+ *             otherwise returns a simple status (there is no public list)
  *
- * Sheet headers (row 1, created on first write):
- *   Timestamp | Name | Email | Phone | Volunteer Roles | Notes
+ * Sheet headers (row 1, any order — reads/writes are header-keyed):
+ *   Timestamp | Name | Email | Phone | Volunteer Roles | Notes | Edit Token | Last Updated
+ *
+ * Script Properties (Project Settings -> Script Properties):
+ *   MAILER_URL   — /exec URL of the shared mailer microservice
+ *   MAIL_SECRET  — shared secret the mailer checks (same value as the mailer)
  */
+
+// ---- Config ----------------------------------------------------------------
+
+var VOL_SHEET_NAME = 'Volunteers';
+
+// Live site base URL, must end with '/'. Used to build the edit link in emails.
+var SITE_URL = 'https://spiralpalooza.org/';
+
+// Full header row, in canonical order. ensureHeaders_ uses this to create the
+// sheet or to backfill any missing columns (e.g. Edit Token on an older sheet).
+var VOL_HEADERS = [
+  'Timestamp', 'Name', 'Email', 'Phone', 'Volunteer Roles', 'Notes',
+  'Edit Token', 'Last Updated'
+];
+
+// ---- Write path (doPost) ---------------------------------------------------
+
 function doPost(e) {
   try {
-    var data = JSON.parse(e.postData.contents);
+    var data = parsePayload_(e);
 
-    var ss = SpreadsheetApp.getActiveSpreadsheet();
-    var sheet = ss.getSheetByName("Volunteers")
-               || ss.insertSheet("Volunteers");
-
-    // Column order is defined once here; the header row and each data row are
-    // both derived from this map, so they can't drift out of sync.
-    var record = {
-      "Timestamp":       new Date(),
-      "Name":            data.name         || "",
-      "Email":           data.email        || "",
-      "Phone":           data.phone        || "",
-      "Volunteer Roles": data.roles        || "",
-      "Notes":           data.notes        || ""
-    };
-    var headers = Object.keys(record);
-
-    if (sheet.getLastRow() === 0) {
-      sheet.appendRow(headers);
-      sheet.getRange(1, 1, 1, headers.length).setFontWeight("bold");
-      sheet.setFrozenRows(1);
+    // Reject incomplete submissions before touching the sheet or sending mail.
+    // This is data-integrity validation, NOT access control — the endpoint is public.
+    var problem = validateSignup_(data);
+    if (problem) {
+      return ContentService
+        .createTextOutput(JSON.stringify({ status: "error", message: problem }))
+        .setMimeType(ContentService.MimeType.JSON);
     }
 
-    sheet.appendRow(headers.map(function(h) { return record[h]; }));
+    var ss = SpreadsheetApp.getActiveSpreadsheet();
+    var sheet = ss.getSheetByName(VOL_SHEET_NAME) || ss.insertSheet(VOL_SHEET_NAME);
+    ensureHeaders_(sheet);
+
+    var saved = saveSignup_(sheet, data);
+
+    sendEmail_(data, saved.token, saved.isUpdate);
 
     return ContentService
-      .createTextOutput(JSON.stringify({status:"success"}))
+      .createTextOutput(JSON.stringify({ status: "success" }))
       .setMimeType(ContentService.MimeType.JSON);
 
-  } catch(err) {
+  } catch (err) {
+    console.error('doPost failed: ' + (err && err.stack ? err.stack : err));
     return ContentService
-      .createTextOutput(JSON.stringify({status:"error",message:err.toString()}))
+      .createTextOutput(JSON.stringify({ status: "error", message: err.toString() }))
       .setMimeType(ContentService.MimeType.JSON);
   }
+}
+
+// Accepts either a JSON body or a form POST with a `payload` field, so the
+// endpoint keeps working if the frontend ever switches off no-cors JSON.
+function parsePayload_(e) {
+  if (e && e.postData && e.postData.type === "application/json") {
+    return JSON.parse(e.postData.contents);
+  }
+  if (e && e.parameter && e.parameter.payload) {
+    return JSON.parse(e.parameter.payload);
+  }
+  if (e && e.postData && e.postData.contents) {
+    return JSON.parse(e.postData.contents);
+  }
+  return (e && e.parameter) || {};
+}
+
+// Maps an incoming signup payload to sheet columns by header text. Timestamp,
+// Edit Token, and Last Updated are managed by doPost / updateRowByToken_.
+function volunteerRow_(data) {
+  return {
+    'Name':            data.name  || '',
+    'Email':           data.email || '',
+    'Phone':           data.phone || '',
+    'Volunteer Roles': data.roles || '',
+    'Notes':           data.notes || ''
+  };
+}
+
+// Writes the signup to the sheet: updates the row matching data.editToken if found,
+// otherwise appends a new row with a fresh token. Returns { token, isUpdate }.
+// No email/validation here — kept separate from doPost so the write path can be
+// tested without going through the email code path.
+function saveSignup_(sheet, data) {
+  var values = volunteerRow_(data);
+
+  if (data.editToken) {
+    values['Last Updated'] = new Date();
+    if (updateRowByToken_(sheet, data.editToken, values)) {
+      return { token: data.editToken, isUpdate: true };
+    }
+  }
+  var token = Utilities.getUuid();      // new signup, or editToken not found (falls back to new)
+  values['Timestamp'] = new Date();
+  values['Edit Token'] = token;
+  appendByHeader_(sheet, values);
+  return { token: token, isUpdate: false };
+}
+
+// Validates the genuinely required fields for data integrity (NOT access control
+// — the endpoint is public; this just keeps junk/incomplete rows out). Returns an
+// error message string, or '' if the payload is acceptable.
+function validateSignup_(data) {
+  if (!data) return 'Missing request body.';
+  if (!String(data.name || '').trim()) return 'Name is required.';
+  var email = String(data.email || '').trim();
+  if (!email || email.indexOf('@') === -1) return 'A valid email is required.';
+  // Roles are intentionally NOT required: editing a sign-up to remove every role
+  // (withdrawing from all shifts) is a valid update.
+  return '';
+}
+
+// Create the sheet's header row if it's empty, or backfill any missing headers
+// (Edit Token / Last Updated may not exist on a sheet from before the edit-link
+// feature). Existing columns and their order are left untouched.
+function ensureHeaders_(sheet) {
+  if (sheet.getLastRow() === 0) {
+    sheet.appendRow(VOL_HEADERS);
+    sheet.getRange(1, 1, 1, VOL_HEADERS.length).setFontWeight('bold');
+    sheet.setFrozenRows(1);
+    return;
+  }
+  // getLastColumn() is the widest used column across the whole sheet, so a data
+  // row wider than the header row would pad row 1 with trailing blanks. Trim those
+  // so missing headers append right after the real ones, not after empty gap columns.
+  var rowOne = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0]
+    .map(function (h) { return String(h).trim(); });
+  var width = rowOne.length;
+  while (width > 0 && rowOne[width - 1] === '') width--;
+  var headers = rowOne.slice(0, width);
+  var missing = VOL_HEADERS.filter(function (h) { return headers.indexOf(h) === -1; });
+  if (missing.length) {
+    var start = width + 1;
+    sheet.getRange(1, start, 1, missing.length).setValues([missing]).setFontWeight('bold');
+  }
+}
+
+// Append a row by matching the values object's keys to the sheet's header row.
+// Column order in the sheet does not have to match code order: a header with no
+// matching key is left blank, and a key with no matching header is ignored.
+function appendByHeader_(sheet, values) {
+  var headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
+  var row = headers.map(function (h) {
+    var key = String(h).trim();
+    return Object.prototype.hasOwnProperty.call(values, key) ? values[key] : '';
+  });
+  sheet.appendRow(row);
+}
+
+// Finds the row whose 'Edit Token' matches and overwrites it. Columns not present
+// in `values` (Timestamp, Edit Token) keep their existing cell. Returns false if
+// no row matches, so doPost can fall back to appending a new row.
+function updateRowByToken_(sheet, token, values) {
+  var grid = sheet.getDataRange().getValues();
+  var headers = grid[0];
+  var tokenCol = headers.indexOf('Edit Token');
+  if (tokenCol === -1) return false;
+
+  for (var i = 1; i < grid.length; i++) {
+    if (String(grid[i][tokenCol]) === String(token)) {
+      var row = headers.map(function (h, c) {
+        var key = String(h).trim();
+        return Object.prototype.hasOwnProperty.call(values, key) ? values[key] : grid[i][c];
+      });
+      sheet.getRange(i + 1, 1, 1, row.length).setValues([row]);
+      return true;
+    }
+  }
+  return false;
+}
+
+// ---- Read path (doGet) -----------------------------------------------------
+
+function doGet(e) {
+  if (e && e.parameter && e.parameter.edit) {
+    return getSignupForEdit_(e.parameter.edit);
+  }
+  // No public volunteer list — the only GET use is the edit-mode prefetch above.
+  return ContentService
+    .createTextOutput(JSON.stringify({ status: "success" }))
+    .setMimeType(ContentService.MimeType.JSON);
+}
+
+// Returns one signup by edit token, shaped for the edit form: {found, record}.
+function getSignupForEdit_(token) {
+  try {
+    var sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(VOL_SHEET_NAME);
+    var grid = sheet.getDataRange().getValues();
+    var headers = grid[0];
+    var col = {};
+    headers.forEach(function (h, i) { col[String(h).trim()] = i; });
+    var tokenCol = col['Edit Token'];
+
+    var result = { found: false };
+    if (tokenCol != null) {
+      for (var i = 1; i < grid.length; i++) {
+        if (String(grid[i][tokenCol]) === String(token)) {
+          var r = grid[i];
+          var get = function (name) { return col[name] != null ? r[col[name]] : ''; };
+          result = {
+            found: true,
+            record: {
+              name:  get('Name'),
+              email: get('Email'),
+              phone: get('Phone'),
+              roles: get('Volunteer Roles'),
+              notes: get('Notes')
+            }
+          };
+          break;
+        }
+      }
+    }
+    return ContentService
+      .createTextOutput(JSON.stringify(result))
+      .setMimeType(ContentService.MimeType.JSON);
+
+  } catch (err) {
+    console.error('getSignupForEdit_ failed: ' + err);
+    return ContentService
+      .createTextOutput(JSON.stringify({ found: false, error: err.toString() }))
+      .setMimeType(ContentService.MimeType.JSON);
+  }
+}
+
+// ---- Email -----------------------------------------------------------------
+
+// Build and send the signup confirmation. Best-effort: sendConfirmation_ swallows
+// failures, and we bail early if there's no usable email address.
+function sendEmail_(data, token, isUpdate) {
+  if (!data.email || data.email.indexOf('@') === -1) return;
+  var base = pickSiteBase_(data.siteUrl);
+  var sep = base.indexOf('?') === -1 ? '?' : '&';
+  var editUrl = token ? (base + sep + 'edit=' + token + '&type=volunteer') : '';
+  sendConfirmation_(data.email, 'Your Spiralpalooza volunteer sign-up', genEmailHTML_(data, editUrl, isUpdate));
+}
+
+// Builds the edit-link base from the URL the form was served from (data.siteUrl),
+// so links work across local/preview/production without code changes. The caller's
+// URL is only trusted if its host is on the allowlist — otherwise we fall back to
+// the configured SITE_URL, to avoid becoming a phishing/open-redirect vector (the
+// link lands in an email, so an attacker-controlled URL could not be allowed through).
+function pickSiteBase_(clientUrl) {
+  if (clientUrl && /^https?:\/\//i.test(clientUrl)) {
+    // Match on the URL's HOST, not a substring — a substring check would also let
+    // "https://evil.com/?x=localhost" or "https://localhost.attacker.com/" through.
+    var m = clientUrl.match(/^https?:\/\/([^\/?#]+)/i);
+    var host = m ? m[1].split(':')[0].toLowerCase() : '';
+    if (host === 'localhost' || host === '127.0.0.1' ||
+        host === 'spiralpalooza.org' || host.endsWith('.spiralpalooza.org') ||
+        host === 'spiralpalooza.pages.dev' || host.endsWith('.spiralpalooza.pages.dev')) {
+      return clientUrl;
+    }
+  }
+  return SITE_URL;
+}
+
+// Generate the email HTML. Factored out to make this testable without sending email.
+function genEmailHTML_(data, editUrl, isUpdate) {
+  var heading = isUpdate ? 'Your volunteer sign-up has been updated' : 'Thank you for volunteering!';
+  var editLine = editUrl
+    ? '<p style="color:#7A4010;font-size:13px">Need to change the roles you signed up for? Use your personal link to update them:<br><a href="' + editUrl + '">' + editUrl + '</a></p>'
+    : '';
+
+  var roles = String(data.roles || '').split(', ').filter(function (r) { return r.trim(); });
+  var rolesHtml = roles.length
+    ? '<ul>' + roles.map(function (r) { return '<li>' + esc_(r) + '</li>'; }).join('') + '</ul>'
+    : '<p>(no specific roles selected)</p>';
+
+  return [
+    '<div style="font-family:Arial,sans-serif;color:#3D1C00;line-height:1.6">',
+      '<h2 style="color:#7B3A0E">' + heading + '</h2>',
+      '<p>Hi ' + esc_(data.name) + ',</p>',
+      '<p>Thank you for signing up to help make Spiralpalooza happen ' +
+        'on Saturday, October 3, 2026.</p>',
+      '<p><strong>You signed up to help with:</strong></p>',
+      rolesHtml,
+      (data.notes ? '<p><strong>Your notes:</strong> ' + esc_(data.notes) + '</p>' : ''),
+      '<p style="color:#7A4010;font-size:13px">The team will be in touch closer to the date. Reply anytime with questions.</p>',
+      editLine,
+    '</div>'
+  ].join('');
+}
+
+// Best-effort confirmation send. Calls the mailer microservice server-to-server
+// so the email goes out from childrenfirstmail, not from this script's owner.
+// Never throws — a mail hiccup must not fail the signup write.
+// A copy of this goes in each script.
+function sendConfirmation_(to, subject, htmlBody) {
+  try {
+    var props = PropertiesService.getScriptProperties();
+    var url = props.getProperty('MAILER_URL');
+    var secret = props.getProperty('MAIL_SECRET');
+    if (!url || !secret || !to) return;
+
+    UrlFetchApp.fetch(url, {
+      method: 'post',
+      contentType: 'application/json',
+      muteHttpExceptions: true,
+      payload: JSON.stringify({ secret: secret, to: to, subject: subject, htmlBody: htmlBody })
+    });
+  } catch (err) {
+    // swallow — confirmation email is non-critical
+  }
+}
+
+// Escape user-supplied text before dropping it into HTML.
+function esc_(s) {
+  return String(s == null ? '' : s)
+    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
+}
+
+// ============================================================================
+//  TESTS  (run runAllVolunteerTests / runEmailTests from the editor Run dropdown)
+// ============================================================================
+
+var TEST_SHEET_NAME = 'Volunteer_TEST';
+
+// ---- Tiny assert + sheet helpers -------------------------------------------
+
+function assertEquals_(label, expected, actual) {
+  // String() so 0 and "0", or '' and a blank cell, compare equal.
+  if (String(expected) !== String(actual)) {
+    throw new Error('FAIL ' + label + ': expected "' + expected + '" but got "' + actual + '"');
+  }
+  Logger.log('  PASS ' + label);
+}
+
+function assertTruthy_(label, actual) {
+  if (!actual) throw new Error('FAIL ' + label + ': expected a value but got "' + actual + '"');
+  Logger.log('  PASS ' + label);
+}
+
+// Build a fresh test sheet with the given headers (defaults to production order).
+function makeTestSheet_(headers) {
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var existing = ss.getSheetByName(TEST_SHEET_NAME);
+  if (existing) ss.deleteSheet(existing);
+  var sheet = ss.insertSheet(TEST_SHEET_NAME);
+  sheet.appendRow(headers || VOL_HEADERS);
+  return sheet;
+}
+
+// Read the most recently appended row back as a {header: value} object.
+function lastRowAsObject_(sheet) {
+  var values = sheet.getDataRange().getValues();
+  var headers = values[0];
+  var last = values[values.length - 1];
+  var obj = {};
+  headers.forEach(function (h, i) { obj[String(h).trim()] = last[i]; });
+  return obj;
+}
+
+function cleanupTestSheet_() {
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var sheet = ss.getSheetByName(TEST_SHEET_NAME);
+  if (sheet) ss.deleteSheet(sheet);
+}
+
+// ---- Sample payloads --------------------------------------------------------
+
+function fullPayload_() {
+  return {
+    name: 'Ada Lovelace',
+    email: 'chloe.palenchar@gmail.com',
+    phone: '(919) 555-0100',
+    roles: 'Setup — Friday Morning, Check-In & Shirts, Photography',
+    notes: 'Happy to bring a ladder.'
+  };
+}
+
+// ---- Data-path tests --------------------------------------------------------
+
+function testFullPayload_() {
+  Logger.log('testFullPayload_');
+  var sheet = makeTestSheet_();
+  appendByHeader_(sheet, volunteerRow_(fullPayload_()));
+  var row = lastRowAsObject_(sheet);
+
+  assertEquals_('Name', 'Ada Lovelace', row['Name']);
+  assertEquals_('Email', 'chloe.palenchar@gmail.com', row['Email']);
+  assertEquals_('Phone', '(919) 555-0100', row['Phone']);
+  assertEquals_('Roles', 'Setup — Friday Morning, Check-In & Shirts, Photography', row['Volunteer Roles']);
+  assertEquals_('Notes', 'Happy to bring a ladder.', row['Notes']);
+}
+
+function testMissingOptionalFields_() {
+  Logger.log('testMissingOptionalFields_');
+  var sheet = makeTestSheet_();
+  appendByHeader_(sheet, volunteerRow_({ name: 'Grace Hopper', email: 'grace@example.com', roles: 'Photography' }));
+  var row = lastRowAsObject_(sheet);
+
+  assertEquals_('Name', 'Grace Hopper', row['Name']);
+  assertEquals_('Roles', 'Photography', row['Volunteer Roles']);
+  assertEquals_('Phone blank', '', row['Phone']);
+  assertEquals_('Notes blank', '', row['Notes']);
+}
+
+function testColumnOrderIndependent_() {
+  Logger.log('testColumnOrderIndependent_');
+  var scrambled = VOL_HEADERS.slice().reverse();
+  var sheet = makeTestSheet_(scrambled);
+  appendByHeader_(sheet, volunteerRow_(fullPayload_()));
+  var row = lastRowAsObject_(sheet);
+
+  assertEquals_('Name (scrambled)', 'Ada Lovelace', row['Name']);
+  assertEquals_('Roles (scrambled)', 'Setup — Friday Morning, Check-In & Shirts, Photography', row['Volunteer Roles']);
+  assertEquals_('Notes (scrambled)', 'Happy to bring a ladder.', row['Notes']);
+}
+
+function testEnsureHeadersBackfill_() {
+  Logger.log('testEnsureHeadersBackfill_');
+  // Simulate an older sheet that predates the edit-link columns.
+  var oldHeaders = ['Timestamp', 'Name', 'Email', 'Phone', 'Volunteer Roles', 'Notes'];
+  var sheet = makeTestSheet_(oldHeaders);
+
+  ensureHeaders_(sheet);
+  var headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0]
+    .map(function (h) { return String(h).trim(); });
+
+  assertTruthy_('Edit Token backfilled', headers.indexOf('Edit Token') > -1);
+  assertTruthy_('Last Updated backfilled', headers.indexOf('Last Updated') > -1);
+  // Existing columns are untouched.
+  assertEquals_('Name still col 2', 'Name', headers[1]);
+}
+
+function testEnsureHeadersWideRow_() {
+  Logger.log('testEnsureHeadersWideRow_');
+  // Older sheet (no edit-link columns) with a data row wider than the header row.
+  var oldHeaders = ['Timestamp', 'Name', 'Email', 'Phone', 'Volunteer Roles', 'Notes'];
+  var sheet = makeTestSheet_(oldHeaders);
+  sheet.getRange(2, oldHeaders.length + 3).setValue('stray');  // value 2 cols past the headers
+
+  ensureHeaders_(sheet);
+  var headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0]
+    .map(function (h) { return String(h).trim(); });
+
+  // New headers land immediately after the real ones, not after the stray gap.
+  assertEquals_('Edit Token right after Notes', 'Edit Token', headers[oldHeaders.length]);
+  assertEquals_('Last Updated next', 'Last Updated', headers[oldHeaders.length + 1]);
+}
+
+function testPickSiteBase_() {
+  Logger.log('testPickSiteBase_');
+  // Allowlisted hosts: the client URL is returned unchanged.
+  assertEquals_('localhost allowed', 'http://localhost:8000/x', pickSiteBase_('http://localhost:8000/x'));
+  assertEquals_('prod allowed', 'https://spiralpalooza.org/', pickSiteBase_('https://spiralpalooza.org/'));
+  assertEquals_('prod subdomain allowed', 'https://www.spiralpalooza.org/', pickSiteBase_('https://www.spiralpalooza.org/'));
+  assertEquals_('pages.dev allowed', 'https://spiralpalooza.pages.dev/', pickSiteBase_('https://spiralpalooza.pages.dev/'));
+  // Everything else falls back to SITE_URL (open-redirect / phishing guard).
+  assertEquals_('evil w/ localhost query rejected', SITE_URL, pickSiteBase_('https://evil.com/?x=localhost'));
+  assertEquals_('localhost subdomain spoof rejected', SITE_URL, pickSiteBase_('https://localhost.attacker.com/'));
+  assertEquals_('prod substring spoof rejected', SITE_URL, pickSiteBase_('https://spiralpalooza.org.evil.com/'));
+  assertEquals_('non-http rejected', SITE_URL, pickSiteBase_('ftp://spiralpalooza.org/'));
+  assertEquals_('empty falls back', SITE_URL, pickSiteBase_(''));
+}
+
+function testValidateSignup_() {
+  Logger.log('testValidateSignup_');
+  assertEquals_('valid payload passes', '', validateSignup_(fullPayload_()));
+
+  var noName = fullPayload_(); noName.name = '   ';
+  assertTruthy_('blank name rejected', validateSignup_(noName));
+
+  var badEmail = fullPayload_(); badEmail.email = 'nope';
+  assertTruthy_('email without @ rejected', validateSignup_(badEmail));
+
+  var noRoles = fullPayload_(); noRoles.roles = '';
+  assertEquals_('empty roles allowed (withdrawal)', '', validateSignup_(noRoles));
+
+  assertTruthy_('null data rejected', validateSignup_(null));
+}
+
+function testDoPost_endToEnd_() {
+  Logger.log('testDoPost_endToEnd_');
+  var sheet = makeTestSheet_();
+  var savedName = VOL_SHEET_NAME;
+  VOL_SHEET_NAME = TEST_SHEET_NAME;
+  try {
+    var res = doPost({ postData: { type: 'application/json', contents: JSON.stringify(fullPayload_()) } });
+    var out = JSON.parse(res.getContent());
+    assertEquals_('doPost returns success', 'success', out.status);
+
+    var row = lastRowAsObject_(sheet);
+    assertTruthy_('doPost stamped Timestamp', row['Timestamp']);
+    assertTruthy_('doPost generated Edit Token', row['Edit Token']);
+    assertEquals_('doPost wrote Name', 'Ada Lovelace', row['Name']);
+    assertEquals_('doPost wrote Roles', 'Setup — Friday Morning, Check-In & Shirts, Photography', row['Volunteer Roles']);
+  } finally {
+    VOL_SHEET_NAME = savedName;
+  }
+}
+
+function testDoPost_rejectsInvalid_() {
+  Logger.log('testDoPost_rejectsInvalid_');
+  var sheet = makeTestSheet_();
+  var savedName = VOL_SHEET_NAME;
+  VOL_SHEET_NAME = TEST_SHEET_NAME;
+  try {
+    var bad = fullPayload_(); bad.email = 'nope';
+    var res = doPost({ postData: { type: 'application/json', contents: JSON.stringify(bad) } });
+    var out = JSON.parse(res.getContent());
+
+    assertEquals_('doPost reports error', 'error', out.status);
+    assertEquals_('no row written on invalid', 1, sheet.getLastRow());  // header row only
+  } finally {
+    VOL_SHEET_NAME = savedName;
+  }
+}
+
+function testSaveSignup_updateByToken_() {
+  Logger.log('testSaveSignup_updateByToken_');
+  var sheet = makeTestSheet_();
+
+  var first = saveSignup_(sheet, fullPayload_());
+  assertTruthy_('token generated on new', first.token);
+  assertEquals_('new save is not an update', false, first.isUpdate);
+
+  var upd = fullPayload_();
+  upd.roles = 'Photography, Video';
+  upd.editToken = first.token;
+  var second = saveSignup_(sheet, upd);
+
+  assertEquals_('update reuses token', first.token, second.token);
+  assertEquals_('flagged as update', true, second.isUpdate);
+  assertEquals_('row count unchanged after update', 2, sheet.getLastRow());
+  var row = lastRowAsObject_(sheet);
+  assertEquals_('roles updated', 'Photography, Video', row['Volunteer Roles']);
+  assertEquals_('token preserved', first.token, row['Edit Token']);
+  assertTruthy_('Last Updated stamped', row['Last Updated']);
+}
+
+function testGetSignupForEdit_() {
+  Logger.log('testGetSignupForEdit_');
+  var sheet = makeTestSheet_();
+  var saved = saveSignup_(sheet, fullPayload_());
+  var savedName = VOL_SHEET_NAME;
+  VOL_SHEET_NAME = TEST_SHEET_NAME;
+  try {
+    var out = JSON.parse(getSignupForEdit_(saved.token).getContent());
+    assertEquals_('found', true, out.found);
+    assertEquals_('record name', 'Ada Lovelace', out.record.name);
+    assertEquals_('record phone', '(919) 555-0100', out.record.phone);
+    assertEquals_('record roles', 'Setup — Friday Morning, Check-In & Shirts, Photography', out.record.roles);
+    assertEquals_('record notes', 'Happy to bring a ladder.', out.record.notes);
+
+    var miss = JSON.parse(getSignupForEdit_('no-such-token').getContent());
+    assertEquals_('unknown token not found', false, miss.found);
+  } finally {
+    VOL_SHEET_NAME = savedName;
+  }
+}
+
+// ---- Runner (this is the one to pick in the Run dropdown) -------------------
+
+function runAllVolunteerTests() {
+  testFullPayload_();
+  testMissingOptionalFields_();
+  testColumnOrderIndependent_();
+  testEnsureHeadersBackfill_();
+  testEnsureHeadersWideRow_();
+  testValidateSignup_();
+  testDoPost_endToEnd_();
+  testDoPost_rejectsInvalid_();
+  testSaveSignup_updateByToken_();
+  testGetSignupForEdit_();
+  cleanupTestSheet_();
+  Logger.log('ALL VOLUNTEER DATA-PATH TESTS PASSED');
+}
+
+// ---- email html assert helpers ---------------------------------------------
+
+function assertHas_(label, html, needle) {
+  if (html.indexOf(needle) === -1) {
+    throw new Error('FAIL ' + label + ': expected HTML to contain "' + needle + '"');
+  }
+  Logger.log('  PASS ' + label);
+}
+
+function assertLacks_(label, html, needle) {
+  if (html.indexOf(needle) !== -1) {
+    throw new Error('FAIL ' + label + ': expected HTML to NOT contain "' + needle + '"');
+  }
+  Logger.log('  PASS ' + label);
+}
+
+// ---- email html tests ------------------------------------------------------
+
+function testEmail_fullPayload_() {
+  Logger.log('testEmail_fullPayload_');
+  var html = genEmailHTML_({
+    name: 'Ada Lovelace',
+    roles: 'Setup — Friday Morning, Photography',
+    notes: 'Bring a ladder.'
+  }, 'https://example.org/?edit=tok123&type=volunteer', false);
+
+  assertHas_('name', html, 'Ada Lovelace');
+  assertHas_('first role line', html, '<li>Setup — Friday Morning</li>');
+  assertHas_('second role line', html, '<li>Photography</li>');
+  assertHas_('notes', html, 'Bring a ladder.');
+  assertHas_('edit link present', html, 'edit=tok123');
+  assertHas_('new-signup heading', html, 'Thank you for volunteering!');
+}
+
+function testEmail_noRolesNoNotes_() {
+  Logger.log('testEmail_noRolesNoNotes_');
+  var html = genEmailHTML_({ name: 'Grace', roles: '' }, '', false);
+
+  assertHas_('no-roles fallback', html, '(no specific roles selected)');
+  assertLacks_('no notes block', html, 'Your notes:');
+  assertLacks_('no edit line when url blank', html, 'personal link');
+}
+
+function testEmail_updateHeading_() {
+  Logger.log('testEmail_updateHeading_');
+  var html = genEmailHTML_({ name: 'Ada', roles: 'Photography' }, 'https://example.org/?edit=tok9&type=volunteer', true);
+  assertHas_('updated heading', html, 'Your volunteer sign-up has been updated');
+  assertHas_('edit link in update', html, 'edit=tok9');
+}
+
+function testEmail_escapesHtml_() {
+  Logger.log('testEmail_escapesHtml_');
+  var html = genEmailHTML_({ name: '<script>', roles: 'a & b <tag>', notes: 'x & y <z>' }, '', false);
+  assertHas_('escaped name', html, '&lt;script&gt;');
+  assertLacks_('no raw script tag', html, '<script>');
+  assertHas_('escaped role', html, 'a &amp; b &lt;tag&gt;');
+  assertHas_('escaped notes', html, 'x &amp; y &lt;z&gt;');
+}
+
+// ---- runner (pick this in the Run dropdown) ---------------------------------
+
+function runEmailTests() {
+  testEmail_fullPayload_();
+  testEmail_noRolesNoNotes_();
+  testEmail_updateHeading_();
+  testEmail_escapesHtml_();
+  testPickSiteBase_();
+  Logger.log('ALL EMAIL HTML TESTS PASSED');
 }
