@@ -300,7 +300,8 @@ function pickSiteBase_(clientUrl) {
     var host = m ? m[1].split(':')[0].toLowerCase() : '';
     if (host === 'localhost' || host === '127.0.0.1' ||
         host === 'spiralpalooza.org' || host.endsWith('.spiralpalooza.org') ||
-        host === 'spiralpalooza.pages.dev' || host.endsWith('.spiralpalooza.pages.dev')) {
+        host === 'spiralpalooza.pages.dev' || host.endsWith('.spiralpalooza.pages.dev') ||
+        host === 'hurwitzkathleen.github.io') {
       return clientUrl;
     }
   }
@@ -506,6 +507,7 @@ function testPickSiteBase_() {
   assertEquals_('prod allowed', 'https://spiralpalooza.org/', pickSiteBase_('https://spiralpalooza.org/'));
   assertEquals_('prod subdomain allowed', 'https://www.spiralpalooza.org/', pickSiteBase_('https://www.spiralpalooza.org/'));
   assertEquals_('pages.dev allowed', 'https://spiralpalooza.pages.dev/', pickSiteBase_('https://spiralpalooza.pages.dev/'));
+  assertEquals_('github.io allowed', 'https://hurwitzkathleen.github.io/spiralpalooza/', pickSiteBase_('https://hurwitzkathleen.github.io/spiralpalooza/'));
   // Everything else falls back to SITE_URL (open-redirect / phishing guard).
   assertEquals_('evil w/ localhost query rejected', SITE_URL, pickSiteBase_('https://evil.com/?x=localhost'));
   assertEquals_('localhost subdomain spoof rejected', SITE_URL, pickSiteBase_('https://localhost.attacker.com/'));
