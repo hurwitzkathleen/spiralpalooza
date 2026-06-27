@@ -27,6 +27,12 @@
 
 var VOL_SHEET_NAME = 'Volunteers';
 
+// Tab holding the editable role list (columns Group | Role | Description | Needed |
+// Sort). Lives in the same container-bound spreadsheet, so no extra access is needed.
+// The form reads this at load to build its role cards, so the coordinator can add
+// roles or change how many are needed without a code change.
+var VOL_ROLES_SHEET_NAME = 'Roles';
+
 // Live site base URL, must end with '/'. Used to build the edit link in emails.
 var SITE_URL = 'https://spiralpalooza.org/';
 
@@ -197,7 +203,11 @@ function doGet(e) {
   if (e && e.parameter && e.parameter.edit) {
     return getSignupForEdit_(e.parameter.edit);
   }
-  // No public volunteer list — the only GET use is the edit-mode prefetch above.
+  if (e && e.parameter && e.parameter.summary) {
+    return getRoleSummary_();
+  }
+  // No public volunteer list — the only GETs are the edit-mode prefetch and the
+  // role summary above.
   return ContentService
     .createTextOutput(JSON.stringify({ status: "success" }))
     .setMimeType(ContentService.MimeType.JSON);
@@ -245,6 +255,107 @@ function getSignupForEdit_(token) {
   }
 }
 
+// ---- Role summary (doGet ?summary) -----------------------------------------
+
+// Returns the editable role list plus how many people have signed up for each, so
+// the form can render its cards from the sheet and show where help is still needed:
+//   { roles: [{group, role, description, needed}], counts: {role: n} }
+// `needed` is null when the Roles tab cell is blank (uncapped role). On any failure
+// returns empty roles/counts plus an error, so the front-end can show its fallback.
+function getRoleSummary_() {
+  try {
+    var ss = SpreadsheetApp.getActiveSpreadsheet();
+    var rolesSheet = ss.getSheetByName(VOL_ROLES_SHEET_NAME);
+    var volSheet = ss.getSheetByName(VOL_SHEET_NAME);
+    var payload = {
+      roles:  rolesSheet ? readRoles_(rolesSheet) : [],
+      counts: volSheet ? countRoleSignups_(volSheet) : {}
+    };
+    return ContentService
+      .createTextOutput(JSON.stringify(payload))
+      .setMimeType(ContentService.MimeType.JSON);
+  } catch (err) {
+    console.error('getRoleSummary_ failed: ' + err);
+    return ContentService
+      .createTextOutput(JSON.stringify({ roles: [], counts: {}, error: err.toString() }))
+      .setMimeType(ContentService.MimeType.JSON);
+  }
+}
+
+// Split a ", "-joined Volunteer Roles string into trimmed role names, dropping
+// blanks. Role names never contain ", ", so this round-trips what the form joins.
+// Shared by the signup count and the confirmation email.
+function splitRoles_(str) {
+  return String(str == null ? '' : str)
+    .split(', ')
+    .map(function (r) { return r.trim(); })
+    .filter(function (r) { return r; });
+}
+
+// Read the Roles tab (header-keyed) into an array of role definitions. Rows with a
+// blank Role are skipped (lets the coordinator leave spacer rows). Order is by group
+// then row order: roles are clustered under their group in the order the group first
+// appears in the sheet, keeping sheet row order within each group. So the coordinator
+// controls display order just by arranging rows.
+function readRoles_(sheet) {
+  var grid = sheet.getDataRange().getValues();
+  if (grid.length < 2) return [];
+  var col = {};
+  grid[0].forEach(function (h, i) { col[String(h).trim()] = i; });
+
+  var roles = [];
+  var groupFirstSeen = {};   // group -> row index it first appeared, to order groups
+  for (var i = 1; i < grid.length; i++) {
+    var r = grid[i];
+    var get = function (name) { return col[name] != null ? r[col[name]] : ''; };
+    var role = String(get('Role')).trim();
+    if (!role) continue;
+
+    var group = String(get('Group')).trim();
+    if (!(group in groupFirstSeen)) groupFirstSeen[group] = i;
+    // Blank Needed means uncapped (null, the form skips the "X of N"). A non-blank
+    // value that isn't a number (a typo like "two") also falls back to uncapped, so a
+    // mistake fails open rather than parsing to 0 and showing the role as "Full".
+    var neededNum = parseInt(get('Needed'), 10);
+    roles.push({
+      group:       group,
+      role:        role,
+      description: String(get('Description')).trim(),
+      needed:      isNaN(neededNum) ? null : Math.max(0, neededNum),
+      _i:          i
+    });
+  }
+
+  // Stable order: group by first appearance, then row order within the group.
+  roles.sort(function (a, b) {
+    var ga = groupFirstSeen[a.group], gb = groupFirstSeen[b.group];
+    return ga !== gb ? ga - gb : a._i - b._i;
+  });
+  roles.forEach(function (x) { delete x._i; });
+  return roles;
+}
+
+// Tally signups per role name from the Volunteers tab, matched to the Roles tab by
+// exact display text. The returned map only has entries for roles that got at least
+// one signup; the authoritative role list comes from readRoles_, and the front-end
+// renders every role in that list, treating a role absent from this map as 0.
+// Counts are keyed by role name alone, so role names must be unique across the whole
+// Roles tab — reusing a label in two groups would merge their counts.
+function countRoleSignups_(sheet) {
+  var counts = {};
+  var grid = sheet.getDataRange().getValues();
+  if (grid.length < 2) return counts;
+  var rolesCol = grid[0].map(function (h) { return String(h).trim(); }).indexOf('Volunteer Roles');
+  if (rolesCol === -1) return counts;
+
+  for (var i = 1; i < grid.length; i++) {
+    splitRoles_(grid[i][rolesCol]).forEach(function (name) {
+      counts[name] = (counts[name] || 0) + 1;
+    });
+  }
+  return counts;
+}
+
 // ---- Email -----------------------------------------------------------------
 
 // Build and send the signup confirmation. Best-effort: sendConfirmation_ swallows
@@ -285,7 +396,7 @@ function genEmailHTML_(data, editUrl, isUpdate) {
     ? '<p style="color:#7A4010;font-size:13px">Need to change the roles you signed up for? Use your personal link to update them:<br><a href="' + editUrl + '">' + editUrl + '</a></p>'
     : '';
 
-  var roles = String(data.roles || '').split(', ').filter(function (r) { return r.trim(); });
+  var roles = splitRoles_(data.roles);
   var rolesHtml = roles.length
     ? '<ul>' + roles.map(function (r) { return '<li>' + esc_(r) + '</li>'; }).join('') + '</ul>'
     : '<p>(no specific roles selected)</p>';
@@ -339,6 +450,7 @@ function esc_(s) {
 // ============================================================================
 
 var TEST_SHEET_NAME = 'Volunteer_TEST';
+var ROLES_TEST_SHEET_NAME = 'Roles_TEST';
 
 // ---- Tiny assert + sheet helpers -------------------------------------------
 
@@ -375,10 +487,23 @@ function lastRowAsObject_(sheet) {
   return obj;
 }
 
+// Build a fresh named test sheet (used for the Roles tab alongside the volunteer
+// signups sheet, since the role summary reads two tabs at once).
+function makeNamedTestSheet_(name, headers) {
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var existing = ss.getSheetByName(name);
+  if (existing) ss.deleteSheet(existing);
+  var sheet = ss.insertSheet(name);
+  if (headers) sheet.appendRow(headers);
+  return sheet;
+}
+
 function cleanupTestSheet_() {
   var ss = SpreadsheetApp.getActiveSpreadsheet();
-  var sheet = ss.getSheetByName(TEST_SHEET_NAME);
-  if (sheet) ss.deleteSheet(sheet);
+  [TEST_SHEET_NAME, ROLES_TEST_SHEET_NAME].forEach(function (name) {
+    var sheet = ss.getSheetByName(name);
+    if (sheet) ss.deleteSheet(sheet);
+  });
 }
 
 // ---- Sample payloads --------------------------------------------------------
@@ -576,6 +701,83 @@ function testGetSignupForEdit_() {
   }
 }
 
+function testSplitRoles_() {
+  Logger.log('testSplitRoles_');
+  assertEquals_('joined string splits', 3, splitRoles_('Photography, Video, Street Play').length);
+  assertEquals_('single role', 1, splitRoles_('Photography').length);
+  assertEquals_('empty string', 0, splitRoles_('').length);
+  assertEquals_('null', 0, splitRoles_(null).length);
+  // Trailing ", " or stray blanks don't produce empty roles.
+  assertEquals_('trailing separator dropped', 1, splitRoles_('Photography, ').length);
+}
+
+function testReadRoles_() {
+  Logger.log('testReadRoles_');
+  var sheet = makeNamedTestSheet_(ROLES_TEST_SHEET_NAME, ['Group', 'Role', 'Description', 'Needed']);
+  // Rows intentionally interleave groups to prove group-then-row ordering.
+  sheet.appendRow(['Before the Weekend', 'Slide Show', 'photo slideshow', 1]);
+  sheet.appendRow(['Saturday', 'Photography', '2 photographers', 2]);
+  sheet.appendRow(['Before the Weekend', 'Flexible', 'anything', '']);   // blank Needed = uncapped
+  sheet.appendRow(['', '', '', '']);                                      // spacer row, skipped
+
+  var roles = readRoles_(sheet);
+  assertEquals_('three real roles (spacer skipped)', 3, roles.length);
+  // Group order follows first appearance (Before the Weekend, then Saturday); the
+  // second Before-the-Weekend role clusters back under its group, before Saturday.
+  assertEquals_('first role', 'Slide Show', roles[0].role);
+  assertEquals_('second role clustered by group', 'Flexible', roles[1].role);
+  assertEquals_('third role', 'Photography', roles[2].role);
+  assertEquals_('needed parsed', 2, roles[2].needed);
+  assertEquals_('blank needed is null (uncapped)', null, roles[1].needed);
+  assertEquals_('description carried', '2 photographers', roles[2].description);
+}
+
+function testReadRolesMalformedNeeded_() {
+  Logger.log('testReadRolesMalformedNeeded_');
+  var sheet = makeNamedTestSheet_(ROLES_TEST_SHEET_NAME, ['Group', 'Role', 'Description', 'Needed']);
+  sheet.appendRow(['Saturday', 'Photography', '', 'two']);   // typo, not a number
+  var roles = readRoles_(sheet);
+  // Fails open: an unparseable Needed is treated as uncapped, not 0/"Full".
+  assertEquals_('malformed needed is null', null, roles[0].needed);
+}
+
+function testCountRoleSignups_() {
+  Logger.log('testCountRoleSignups_');
+  var sheet = makeTestSheet_();
+  appendByHeader_(sheet, volunteerRow_({ name: 'A', email: 'a@x.com', roles: 'Photography, Video' }));
+  appendByHeader_(sheet, volunteerRow_({ name: 'B', email: 'b@x.com', roles: 'Photography' }));
+  appendByHeader_(sheet, volunteerRow_({ name: 'C', email: 'c@x.com', roles: '' }));  // withdrew
+
+  var counts = countRoleSignups_(sheet);
+  assertEquals_('Photography counted across two rows', 2, counts['Photography']);
+  assertEquals_('Video counted once', 1, counts['Video']);
+  assertEquals_('role with no signups absent from map', 'undefined', typeof counts['Street Play']);
+}
+
+function testGetRoleSummary_() {
+  Logger.log('testGetRoleSummary_');
+  var roleSheet = makeNamedTestSheet_(ROLES_TEST_SHEET_NAME, ['Group', 'Role', 'Description', 'Needed']);
+  roleSheet.appendRow(['Before the Weekend', 'Slide Show', '', 1]);
+  roleSheet.appendRow(['Saturday', 'Photography', '', 2]);
+  var volSheet = makeTestSheet_();
+  appendByHeader_(volSheet, volunteerRow_({ name: 'A', email: 'a@x.com', roles: 'Photography' }));
+  appendByHeader_(volSheet, volunteerRow_({ name: 'B', email: 'b@x.com', roles: 'Photography, Slide Show' }));
+
+  var savedRoles = VOL_ROLES_SHEET_NAME, savedVol = VOL_SHEET_NAME;
+  VOL_ROLES_SHEET_NAME = ROLES_TEST_SHEET_NAME;
+  VOL_SHEET_NAME = TEST_SHEET_NAME;
+  try {
+    var out = JSON.parse(getRoleSummary_().getContent());
+    assertEquals_('two roles returned', 2, out.roles.length);
+    assertEquals_('roles in group-then-row order', 'Slide Show', out.roles[0].role);
+    assertEquals_('Photography count', 2, out.counts['Photography']);
+    assertEquals_('Slide Show count', 1, out.counts['Slide Show']);
+  } finally {
+    VOL_ROLES_SHEET_NAME = savedRoles;
+    VOL_SHEET_NAME = savedVol;
+  }
+}
+
 // ---- Runner (this is the one to pick in the Run dropdown) -------------------
 
 function runAllVolunteerTests() {
@@ -589,6 +791,11 @@ function runAllVolunteerTests() {
   testDoPost_rejectsInvalid_();
   testSaveSignup_updateByToken_();
   testGetSignupForEdit_();
+  testSplitRoles_();
+  testReadRoles_();
+  testReadRolesMalformedNeeded_();
+  testCountRoleSignups_();
+  testGetRoleSummary_();
   cleanupTestSheet_();
   Logger.log('ALL VOLUNTEER DATA-PATH TESTS PASSED');
 }

@@ -933,105 +933,8 @@ function populateShirtForm(r){
       <div style="background:#fff;border:1.5px solid var(--cf-border);border-radius:6px;overflow:hidden;margin-bottom:1rem">
         <div style="background:var(--cf-orange);color:#fff;padding:8px 14px;font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px">Select Your Volunteer Roles</div>
         <div style="padding:1rem 1.25rem">
-          <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:8px" id="vol-roles-grid">
-
-            <div style="grid-column:1/-1;background:#7B3A0E;color:#fff;padding:6px 12px;border-radius:4px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.8px;margin-top:4px">Before the Weekend</div>
-            <label class="vol-role-card" style="display:flex;align-items:flex-start;gap:10px;padding:10px 12px;border:1.5px solid var(--cf-border);border-radius:4px;cursor:pointer;background:#fafaf8;transition:all 0.15s">
-              <input type="checkbox" value="Slide Show" style="margin-top:3px;flex-shrink:0;accent-color:var(--cf-orange)">
-              <div><div style="font-weight:700;font-size:13px;color:var(--cf-text)">Slide Show</div><div style="font-size:11px;color:var(--cf-muted);margin-top:2px">Summer/fall: turn Donna&rsquo;s photos into the party slide show</div></div>
-            </label>
-            <label class="vol-role-card" style="display:flex;align-items:flex-start;gap:10px;padding:10px 12px;border:1.5px solid var(--cf-border);border-radius:4px;cursor:pointer;background:#fafaf8;transition:all 0.15s">
-              <input type="checkbox" value="Shirt Organization" style="margin-top:3px;flex-shrink:0;accent-color:var(--cf-orange)">
-              <div><div style="font-weight:700;font-size:13px;color:var(--cf-text)">Shirt Organization</div><div style="font-size:11px;color:var(--cf-muted);margin-top:2px">Mid-September: help Sarah sort and organize shirt orders</div></div>
-            </label>
-
-            <label class="vol-role-card" style="display:flex;align-items:flex-start;gap:10px;padding:10px 12px;border:1.5px solid var(--cf-border);border-radius:4px;cursor:pointer;background:#fafaf8;transition:all 0.15s">
-              <input type="checkbox" value="Flexible — Before the Weekend" style="margin-top:3px;flex-shrink:0;accent-color:var(--cf-orange)">
-              <div><div style="font-weight:700;font-size:13px;color:var(--cf-text)">Flexible &mdash; Whatever is needed!</div><div style="font-size:11px;color:var(--cf-muted);margin-top:2px">Available for any task during this period</div></div>
-            </label>
-
-            <div style="grid-column:1/-1;background:#7B3A0E;color:#fff;padding:6px 12px;border-radius:4px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.8px;margin-top:4px">Friday, October 2nd &mdash; Day Before</div>
-            <label class="vol-role-card" style="display:flex;align-items:flex-start;gap:10px;padding:10px 12px;border:1.5px solid var(--cf-border);border-radius:4px;cursor:pointer;background:#fafaf8;transition:all 0.15s">
-              <input type="checkbox" value="Setup — Friday Morning" style="margin-top:3px;flex-shrink:0;accent-color:var(--cf-orange)">
-              <div><div style="font-weight:700;font-size:13px;color:var(--cf-text)">Setup &mdash; Friday Morning</div><div style="font-size:11px;color:var(--cf-muted);margin-top:2px">2-hour shift setting up the space Friday morning</div></div>
-            </label>
-            <label class="vol-role-card" style="display:flex;align-items:flex-start;gap:10px;padding:10px 12px;border:1.5px solid var(--cf-border);border-radius:4px;cursor:pointer;background:#fafaf8;transition:all 0.15s">
-              <input type="checkbox" value="Setup — Friday Afternoon" style="margin-top:3px;flex-shrink:0;accent-color:var(--cf-orange)">
-              <div><div style="font-weight:700;font-size:13px;color:var(--cf-text)">Setup &mdash; Friday Afternoon</div><div style="font-size:11px;color:var(--cf-muted);margin-top:2px">2-hour shift setting up the space Friday afternoon</div></div>
-            </label>
-
-            <label class="vol-role-card" style="display:flex;align-items:flex-start;gap:10px;padding:10px 12px;border:1.5px solid var(--cf-border);border-radius:4px;cursor:pointer;background:#fafaf8;transition:all 0.15s">
-              <input type="checkbox" value="Flexible — Friday" style="margin-top:3px;flex-shrink:0;accent-color:var(--cf-orange)">
-              <div><div style="font-weight:700;font-size:13px;color:var(--cf-text)">Flexible &mdash; Whatever is needed!</div><div style="font-size:11px;color:var(--cf-muted);margin-top:2px">Available for any task during this period</div></div>
-            </label>
-
-            <div style="grid-column:1/-1;background:#7B3A0E;color:#fff;padding:6px 12px;border-radius:4px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.8px;margin-top:4px">Saturday, October 3rd &mdash; Day of Event</div>
-            <label class="vol-role-card" style="display:flex;align-items:flex-start;gap:10px;padding:10px 12px;border:1.5px solid var(--cf-border);border-radius:4px;cursor:pointer;background:#fafaf8;transition:all 0.15s">
-              <input type="checkbox" value="Setup — Saturday Morning" style="margin-top:3px;flex-shrink:0;accent-color:var(--cf-orange)">
-              <div><div style="font-weight:700;font-size:13px;color:var(--cf-text)">Setup &mdash; Saturday Morning</div><div style="font-size:11px;color:var(--cf-muted);margin-top:2px">2-hour shift on the morning of the party</div></div>
-            </label>
-            <label class="vol-role-card" style="display:flex;align-items:flex-start;gap:10px;padding:10px 12px;border:1.5px solid var(--cf-border);border-radius:4px;cursor:pointer;background:#fafaf8;transition:all 0.15s">
-              <input type="checkbox" value="Setup — Saturday Afternoon" style="margin-top:3px;flex-shrink:0;accent-color:var(--cf-orange)">
-              <div><div style="font-weight:700;font-size:13px;color:var(--cf-text)">Setup &mdash; Saturday Afternoon</div><div style="font-size:11px;color:var(--cf-muted);margin-top:2px">Final setup shift before guests arrive at 4pm</div></div>
-            </label>
-            <label class="vol-role-card" style="display:flex;align-items:flex-start;gap:10px;padding:10px 12px;border:1.5px solid var(--cf-border);border-radius:4px;cursor:pointer;background:#fafaf8;transition:all 0.15s">
-              <input type="checkbox" value="Check-In & Shirts" style="margin-top:3px;flex-shrink:0;accent-color:var(--cf-orange)">
-              <div><div style="font-weight:700;font-size:13px;color:var(--cf-text)">Check-In &amp; Shirts</div><div style="font-size:11px;color:var(--cf-muted);margin-top:2px">One hour shift &mdash; welcome guests and hand out shirts</div></div>
-            </label>
-            <label class="vol-role-card" style="display:flex;align-items:flex-start;gap:10px;padding:10px 12px;border:1.5px solid var(--cf-border);border-radius:4px;cursor:pointer;background:#fafaf8;transition:all 0.15s">
-              <input type="checkbox" value="Memory Pages / Studio" style="margin-top:3px;flex-shrink:0;accent-color:var(--cf-orange)">
-              <div><div style="font-weight:700;font-size:13px;color:var(--cf-text)">Memory Pages / Studio</div><div style="font-size:11px;color:var(--cf-muted);margin-top:2px">One hour shift &mdash; support guests making Portfolio pages in the Studio</div></div>
-            </label>
-            <label class="vol-role-card" style="display:flex;align-items:flex-start;gap:10px;padding:10px 12px;border:1.5px solid var(--cf-border);border-radius:4px;cursor:pointer;background:#fafaf8;transition:all 0.15s">
-              <input type="checkbox" value="Slide Show in Loft Room" style="margin-top:3px;flex-shrink:0;accent-color:var(--cf-orange)">
-              <div><div style="font-weight:700;font-size:13px;color:var(--cf-text)">Slide Show in Loft Room</div><div style="font-size:11px;color:var(--cf-muted);margin-top:2px">One hour shift &mdash; run the slide show in the loft room</div></div>
-            </label>
-            <label class="vol-role-card" style="display:flex;align-items:flex-start;gap:10px;padding:10px 12px;border:1.5px solid var(--cf-border);border-radius:4px;cursor:pointer;background:#fafaf8;transition:all 0.15s">
-              <input type="checkbox" value="Library / Creation Station" style="margin-top:3px;flex-shrink:0;accent-color:var(--cf-orange)">
-              <div><div style="font-weight:700;font-size:13px;color:var(--cf-text)">Library / Creation Station</div><div style="font-size:11px;color:var(--cf-muted);margin-top:2px">One hour shift &mdash; support guests at the library and creation station</div></div>
-            </label>
-            <label class="vol-role-card" style="display:flex;align-items:flex-start;gap:10px;padding:10px 12px;border:1.5px solid var(--cf-border);border-radius:4px;cursor:pointer;background:#fafaf8;transition:all 0.15s">
-              <input type="checkbox" value="Street Play" style="margin-top:3px;flex-shrink:0;accent-color:var(--cf-orange)">
-              <div><div style="font-weight:700;font-size:13px;color:var(--cf-text)">Street Play</div><div style="font-size:11px;color:var(--cf-muted);margin-top:2px">One hour shift &mdash; supervise the closed street (trikes, balls, and wild happy play!)</div></div>
-            </label>
-            <label class="vol-role-card" style="display:flex;align-items:flex-start;gap:10px;padding:10px 12px;border:1.5px solid var(--cf-border);border-radius:4px;cursor:pointer;background:#fafaf8;transition:all 0.15s">
-              <input type="checkbox" value="Food & Drinks" style="margin-top:3px;flex-shrink:0;accent-color:var(--cf-orange)">
-              <div><div style="font-weight:700;font-size:13px;color:var(--cf-text)">Food &amp; Drinks</div><div style="font-size:11px;color:var(--cf-muted);margin-top:2px">One hour shift &mdash; food &amp; drinks coordination</div></div>
-            </label>
-
-            <label class="vol-role-card" style="display:flex;align-items:flex-start;gap:10px;padding:10px 12px;border:1.5px solid var(--cf-border);border-radius:4px;cursor:pointer;background:#fafaf8;transition:all 0.15s">
-              <input type="checkbox" value="Bike Deck DJ" style="margin-top:3px;flex-shrink:0;accent-color:var(--cf-orange)">
-              <div><div style="font-weight:700;font-size:13px;color:var(--cf-text)">Bike Deck DJ</div><div style="font-size:11px;color:var(--cf-muted);margin-top:2px">One hour shift &mdash; keep the music going on the bike deck</div></div>
-            </label>
-            <label class="vol-role-card" style="display:flex;align-items:flex-start;gap:10px;padding:10px 12px;border:1.5px solid var(--cf-border);border-radius:4px;cursor:pointer;background:#fafaf8;transition:all 0.15s">
-              <input type="checkbox" value="Photography" style="margin-top:3px;flex-shrink:0;accent-color:var(--cf-orange)">
-              <div><div style="font-weight:700;font-size:13px;color:var(--cf-text)">Photography</div><div style="font-size:11px;color:var(--cf-muted);margin-top:2px">One hour shift &mdash; photography (2 photographers needed)</div></div>
-            </label>
-            <label class="vol-role-card" style="display:flex;align-items:flex-start;gap:10px;padding:10px 12px;border:1.5px solid var(--cf-border);border-radius:4px;cursor:pointer;background:#fafaf8;transition:all 0.15s">
-              <input type="checkbox" value="Video" style="margin-top:3px;flex-shrink:0;accent-color:var(--cf-orange)">
-              <div><div style="font-weight:700;font-size:13px;color:var(--cf-text)">Video</div><div style="font-size:11px;color:var(--cf-muted);margin-top:2px">One hour shift &mdash; video documentation (2 videographers needed)</div></div>
-            </label>
-            <label class="vol-role-card" style="display:flex;align-items:flex-start;gap:10px;padding:10px 12px;border:1.5px solid var(--cf-border);border-radius:4px;cursor:pointer;background:#fafaf8;transition:all 0.15s">
-              <input type="checkbox" value="Saturday Night Cleanup" style="margin-top:3px;flex-shrink:0;accent-color:var(--cf-orange)">
-              <div><div style="font-weight:700;font-size:13px;color:var(--cf-text)">Saturday Night Cleanup</div><div style="font-size:11px;color:var(--cf-muted);margin-top:2px">One hour shift &mdash; baseline clean-up Saturday night</div></div>
-            </label>
-
-            <label class="vol-role-card" style="display:flex;align-items:flex-start;gap:10px;padding:10px 12px;border:1.5px solid var(--cf-border);border-radius:4px;cursor:pointer;background:#fafaf8;transition:all 0.15s">
-              <input type="checkbox" value="Flexible — Saturday" style="margin-top:3px;flex-shrink:0;accent-color:var(--cf-orange)">
-              <div><div style="font-weight:700;font-size:13px;color:var(--cf-text)">Flexible &mdash; Whatever is needed!</div><div style="font-size:11px;color:var(--cf-muted);margin-top:2px">Available for any task during this period</div></div>
-            </label>
-
-            <div style="grid-column:1/-1;background:#7B3A0E;color:#fff;padding:6px 12px;border-radius:4px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.8px;margin-top:4px">Sunday, October 4th &mdash; Day After</div>
-            <label class="vol-role-card" style="display:flex;align-items:flex-start;gap:10px;padding:10px 12px;border:1.5px solid var(--cf-border);border-radius:4px;cursor:pointer;background:#fafaf8;transition:all 0.15s">
-              <input type="checkbox" value="Sunday Put-Back Cleanup" style="margin-top:3px;flex-shrink:0;accent-color:var(--cf-orange)">
-              <div><div style="font-weight:700;font-size:13px;color:var(--cf-text)">Sunday Put-Back Cleanup</div><div style="font-size:11px;color:var(--cf-muted);margin-top:2px">Full restoration of the space Sunday (10 people needed)</div></div>
-            </label>
-            <label class="vol-role-card" style="display:flex;align-items:flex-start;gap:10px;padding:10px 12px;border:1.5px solid var(--cf-border);border-radius:4px;cursor:pointer;background:#fafaf8;transition:all 0.15s">
-              <input type="checkbox" value="Flexible — Sunday" style="margin-top:3px;flex-shrink:0;accent-color:var(--cf-orange)">
-              <div><div style="font-weight:700;font-size:13px;color:var(--cf-text)">Flexible &mdash; Whatever is needed!</div><div style="font-size:11px;color:var(--cf-muted);margin-top:2px">Available for any task during this period</div></div>
-            </label>
-
-          </div>
+          <!-- Cards are built by loadVolunteerRoles() from the Roles sheet. -->
+          <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:8px" id="vol-roles-grid"></div>
         </div>
       </div>
 
@@ -1113,19 +1016,94 @@ var VOL_WEBHOOK = "https://script.google.com/macros/s/AKfycbx6plWSSjGWMvA80rQbH2
 // Set when the page is opened via an emailed edit link (?edit=<token>&type=volunteer); null for a new sign-up.
 var volEditToken = null;
 
-// Highlight role cards when checked
-document.querySelectorAll(".vol-role-card input").forEach(function(cb){
-  cb.addEventListener("change", function(){
-    var card = this.closest("label");
-    if(this.checked){
-      card.style.borderColor = "var(--cf-orange)";
-      card.style.background = "var(--cf-orange-light)";
-    } else {
-      card.style.borderColor = "var(--cf-border)";
-      card.style.background = "#fafaf8";
-    }
-  });
+// Role cards are built from the Roles sheet at load (see loadVolunteerRoles), so the
+// checked-highlight uses event delegation on the grid rather than per-checkbox
+// listeners, which would be wiped every time the grid is re-rendered.
+document.getElementById("vol-roles-grid").addEventListener("change", function(e){
+  var cb = e.target;
+  if(!cb || cb.type !== "checkbox") return;
+  var card = cb.closest(".vol-role-card");
+  if(!card) return;
+  if(cb.checked){
+    card.style.borderColor = "var(--cf-orange)";
+    card.style.background = "var(--cf-orange-light)";
+  } else {
+    card.style.borderColor = "var(--cf-border)";
+    card.style.background = "#fafaf8";
+  }
 });
+
+// Resolves once the role cards have rendered (or the fetch failed). Edit-mode prefill
+// waits on this so it can check the right boxes only after the cards exist.
+var volRolesReady = null;
+
+// Fetch the role list + signup counts and build the cards. Roles are fetched-only
+// (no local cache), so a failed fetch means there are no cards to show and the form
+// can't be used — we show a clear error with retry rather than a half-working form.
+function loadVolunteerRoles(){
+  var grid = document.getElementById("vol-roles-grid");
+  grid.innerHTML = '<div style="grid-column:1/-1;padding:0.5rem 0;font-size:13px;color:var(--cf-muted);font-style:italic">Loading volunteer roles&hellip;</div>';
+  volRolesReady = fetch(VOL_WEBHOOK + "?summary=1", {method:"GET"})
+    .then(function(res){ return res.json(); })
+    .then(function(data){
+      if(!data || !data.roles || !data.roles.length) throw new Error("no roles");
+      renderVolunteerRoles(data);
+    })
+    .catch(function(){
+      grid.innerHTML =
+        '<div style="grid-column:1/-1;background:#fde8e8;border:1px solid #e3a9a9;border-radius:4px;padding:0.85rem 1rem;color:#a32d2d;font-size:13px;line-height:1.55">' +
+          'We couldn&rsquo;t load the volunteer roles right now. ' +
+          '<button type="button" onclick="loadVolunteerRoles()" style="background:var(--cf-blue);color:#fff;border:none;padding:6px 12px;border-radius:4px;font-family:var(--sans);font-size:12px;font-weight:700;cursor:pointer;margin:0 2px">Try again</button> ' +
+          'or email <a href="mailto:childrenfirstmail@gmail.com" style="color:var(--cf-blue);font-weight:700">childrenfirstmail@gmail.com</a>.' +
+        '</div>';
+    });
+  return volRolesReady;
+}
+
+// Build the grouped role cards. Groups arrive already in display order; we emit a
+// header each time the group changes. Each card shows how full the role is and, for
+// capped roles, calls out how many more are needed.
+function renderVolunteerRoles(data){
+  var roles = data.roles || [];
+  var counts = data.counts || {};
+  var html = "";
+  var lastGroup = null;
+  roles.forEach(function(r){
+    if(r.group !== lastGroup){
+      html += '<div style="grid-column:1/-1;background:#7B3A0E;color:#fff;padding:6px 12px;border-radius:4px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.8px;margin-top:4px">' + escHtml(r.group) + '</div>';
+      lastGroup = r.group;
+    }
+    html += roleCardHtml(r, counts[r.role] || 0);
+  });
+  document.getElementById("vol-roles-grid").innerHTML = html;
+}
+
+function roleCardHtml(r, count){
+  var statusHtml;
+  if(r.needed == null){
+    // Uncapped role (blank Needed): show a plain count once anyone has joined.
+    statusHtml = count > 0
+      ? '<div style="font-size:11px;color:var(--cf-muted);margin-top:4px">' + count + ' signed up</div>'
+      : '';
+  } else {
+    var remaining = r.needed - count;
+    var pct = r.needed > 0 ? Math.min(100, Math.round(count / r.needed * 100)) : 100;
+    var label = remaining > 0 ? "Needs " + remaining + " more" : "Full";
+    var color = remaining > 0 ? "#b45309" : "#2e6b40";
+    var barColor = remaining > 0 ? "var(--cf-orange)" : "var(--cf-green)";
+    statusHtml =
+      '<div style="font-size:11px;color:' + color + ';margin-top:4px">' + count + ' of ' + r.needed + ' filled &middot; <strong>' + label + '</strong></div>' +
+      '<div style="height:4px;background:#eee;border-radius:2px;margin-top:4px;overflow:hidden"><div style="height:100%;width:' + pct + '%;background:' + barColor + '"></div></div>';
+  }
+  return '<label class="vol-role-card" style="display:flex;align-items:flex-start;gap:10px;padding:10px 12px;border:1.5px solid var(--cf-border);border-radius:4px;cursor:pointer;background:#fafaf8;transition:all 0.15s">' +
+    '<input type="checkbox" value="' + escHtml(r.role) + '" style="margin-top:3px;flex-shrink:0;accent-color:var(--cf-orange)">' +
+    '<div style="flex:1">' +
+      '<div style="font-weight:700;font-size:13px;color:var(--cf-text)">' + escHtml(r.role) + '</div>' +
+      (r.description ? '<div style="font-size:11px;color:var(--cf-muted);margin-top:2px">' + escHtml(r.description) + '</div>' : '') +
+      statusHtml +
+    '</div>' +
+  '</label>';
+}
 
 function submitVolunteer(){
   var name  = document.getElementById("vol-name").value.trim();
@@ -1182,6 +1160,9 @@ function submitVolunteer(){
     document.getElementById("vol-form-ui").style.display = "none";
     document.getElementById("vol-edit-banner").style.display = "none";
     msgEl.scrollIntoView({behavior:"smooth",block:"start"});
+    // Refresh counts so a later view reflects this signup. The POST is no-cors so we
+    // can't read confirmation; give the write a moment to land before re-fetching.
+    setTimeout(loadVolunteerRoles, 1500);
   })
   .catch(function(){
     errEl.textContent = "Something went wrong. Please try again or email childrenfirstmail@gmail.com.";
@@ -1200,14 +1181,21 @@ function populateVolunteerForm(r){
   document.getElementById("vol-phone").value = r.phone == null ? "" : r.phone;
   document.getElementById("vol-notes").value = r.notes == null ? "" : r.notes;
 
-  // Roles arrive as the ", "-joined string we stored. Re-check the matching cards
-  // and fire change so the card-highlight styling re-applies.
-  var saved = String(r.roles == null ? "" : r.roles).split(", ").map(function(s){ return s.trim(); });
-  document.querySelectorAll(".vol-role-card input").forEach(function(cb){
-    cb.checked = saved.indexOf(cb.value) > -1;
-    cb.dispatchEvent(new Event("change"));
+  // Roles arrive as the ", "-joined string we stored. The cards are fetched
+  // asynchronously, so wait for them to render before checking the matching boxes.
+  var saved = String(r.roles == null ? "" : r.roles)
+    .split(", ").map(function(s){ return s.trim(); }).filter(Boolean);
+  (volRolesReady || loadVolunteerRoles()).then(function(){
+    document.querySelectorAll("#vol-roles-grid .vol-role-card input").forEach(function(cb){
+      cb.checked = saved.indexOf(cb.value) > -1;
+      // Dispatch change so the delegated highlight handler styles checked cards.
+      cb.dispatchEvent(new Event("change", {bubbles:true}));
+    });
   });
 }
+
+// Build the role cards on load so they're ready for a new sign-up or an edit prefill.
+loadVolunteerRoles();
 </script>
 
 <script>
