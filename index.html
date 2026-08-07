@@ -30,8 +30,14 @@ nav{background:var(--cf-blue);border-bottom:3px solid var(--cf-orange);padding:0
 .hamburger span{display:block;width:24px;height:2px;background:#f5d9b8;border-radius:2px;transition:all 0.2s}
 .shirt-proof-combined{display:block}
 .shirt-proof-stacked{display:none}
+.action-banner{background:var(--cf-blue-light);border-bottom:2px solid var(--cf-border);padding:0.75rem 1.5rem;display:flex;align-items:center;justify-content:center;gap:1.75rem;flex-wrap:wrap}
+.action-item{display:flex;align-items:center;gap:7px;font-size:14px;color:var(--cf-text);font-family:var(--sans);cursor:pointer;text-decoration:none;padding:4px 10px;border-radius:4px;transition:background 0.15s,color 0.15s}
+.action-item strong{color:var(--cf-blue)}
+.action-item:hover{background:#fff;color:var(--cf-blue)}
 @media(min-width:681px){.nav-links{display:flex!important}}
 @media(max-width:680px){
+  .action-banner{gap:0.35rem;padding:0.6rem 1rem;flex-direction:column;align-items:stretch}
+  .action-item{font-size:13px;justify-content:center;padding:7px 10px;background:#fff;border:1px solid var(--cf-border);border-radius:4px}
   .shirt-proof-combined{display:none!important}
   .shirt-proof-stacked{display:block!important}
   nav{padding:0 1rem;min-height:64px;position:relative}
@@ -216,6 +222,12 @@ section{display:none}section.active{display:block}
     <div class="event-detail">&#128197; <span><strong>Saturday, October 3, 2026</strong></span></div>
     <div class="event-detail">&#9200; <span><strong>4:00 pm</strong></span></div>
     <div class="event-detail">&#128205; <span><strong>Children First Playground</strong> &middot; 1211 Carroll St, Durham, NC 27707</span></div>
+  </div>
+
+  <div class="action-banner">
+    <a class="action-item" onclick="show('shirts',null)">&#128085; Order Shirts by <strong>September 3</strong></a>
+    <a class="action-item" onclick="show('rsvp',null)">&#9989; RSVP by <strong>September 15</strong></a>
+    <a class="action-item" onclick="show('volunteer',null)">&#128153; Volunteer <strong>anytime</strong> &mdash; the sooner the better!</a>
   </div>
 
   <div class="wrap">
