@@ -253,6 +253,9 @@ function doGet(e) {
       .setMimeType(ContentService.MimeType.JSON);
 
   } catch (err) {
+    // Every other catch in this file logs; without this the guest-list read could
+    // fail for days with no trace in Executions or Cloud Logging.
+    console.error('doGet failed: ' + (err && err.stack ? err.stack : err));
     return ContentService
       .createTextOutput(JSON.stringify({ status: "error", message: err.toString() }))
       .setMimeType(ContentService.MimeType.JSON);

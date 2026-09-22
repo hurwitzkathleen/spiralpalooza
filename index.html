@@ -1125,7 +1125,8 @@ function populateShirtForm(r){
     </div>
 
     <div id="whocoming-error" style="display:none;background:#fde8e8;border:1px solid #e0b0b0;border-radius:4px;padding:0.85rem 1rem;font-size:13px;color:#a32d2d;margin-top:1rem">
-      Couldn&rsquo;t load the guest list right now. Please try again in a moment.
+      Couldn&rsquo;t load the guest list right now.
+      <button onclick="loadWhoComing()" style="background:var(--cf-blue);color:#fff;border:none;padding:6px 14px;border-radius:4px;font-family:var(--sans);font-size:13px;font-weight:700;cursor:pointer;margin-left:0.5rem">Try again</button>
     </div>
   </div>
 </section>
@@ -1262,6 +1263,55 @@ function escHtml(s){
     .replace(/"/g,"&quot;").replace(/'/g,"&#39;");
 }
 
+// Apps Script /exec answers with a 302 into script.googleusercontent.com and takes
+// 1.5-4s even when healthy, so a single transient failure on a cold load is common.
+// Retry with backoff rather than making the visitor hit reload themselves, and reject
+// with a real Error so callers can tell "the request died" from "the data says no".
+function fetchJson(url, attempts){
+  attempts = attempts || 3;
+  var tries = 0;
+
+  function attempt(){
+    tries++;
+    var ctrl  = typeof AbortController === "function" ? new AbortController() : null;
+    var timer = setTimeout(function(){ if(ctrl) ctrl.abort(); }, 15000);
+
+    // Called inside a promise so a synchronous throw (no fetch at all in a very
+    // old browser) becomes a rejection and reaches the catch below. Thrown bare it
+    // would escape before .catch is attached, leaving callers stuck on "Loading...".
+    return Promise.resolve()
+      .then(function(){
+        return fetch(url, ctrl ? {method:"GET", signal:ctrl.signal} : {method:"GET"});
+      })
+      .then(function(res){
+        clearTimeout(timer);
+        // Quota and backend errors come back as an HTML page. Reject on the status
+        // so it retries as a transport failure instead of dying in res.json().
+        if(!res.ok) throw new Error("HTTP " + res.status);
+        return res.json();
+      })
+      .catch(function(err){
+        clearTimeout(timer);
+        if(tries >= attempts) throw err;
+        var wait = 600 * Math.pow(2, tries - 1);
+        // Surfaced so a visitor reporting trouble can be asked for their console:
+        // steady retries here mean the endpoint is flaky, not the page. Counts
+        // attempts rather than retries so this lines up with the give-up message.
+        console.warn("fetchJson: attempt " + tries + " of " + attempts +
+                     " failed, retrying in " + wait + "ms", err);
+        return new Promise(function(resolve){
+          setTimeout(resolve, wait);
+        }).then(attempt);
+      });
+  }
+
+  return attempt();
+}
+
+// Every nav click re-enters loadWhoComing. Without this counter a slow earlier
+// request can land after a newer one and overwrite the fresher result.
+var whoComingRequest = 0;
+
 // Navigation
 function loadWhoComing(){
   var loading = document.getElementById("whocoming-loading");
@@ -1271,14 +1321,24 @@ function loadWhoComing(){
   var tbody   = document.getElementById("whocoming-tbody");
   var count   = document.getElementById("whocoming-count");
 
+  var mine = ++whoComingRequest;
+
   loading.style.display = "block";
   empty.style.display   = "none";
   list.style.display    = "none";
   error.style.display   = "none";
 
-  fetch("https://script.google.com/macros/s/AKfycbyHcxH8l-TTgJTN9kYGGjjTFqhR2VMiIZbCD6c42NtDghRXi0G6yKn7T_HDQLmoyZ1a/exec", {method:"GET"})
-  .then(function(r){ return r.json(); })
+  fetchJson(RSVP_WEBHOOK)
   .then(function(data){
+    if(mine !== whoComingRequest) return;   // superseded by a newer load
+
+    // doGet reports its own failures as {status:"error"} with HTTP 200, so this is
+    // the only way to catch them. Without it an exception in the backend renders as
+    // a cheerful "No RSVPs yet" instead of an error.
+    if(!data || data.status === "error"){
+      throw new Error("backend error: " + ((data && data.message) || "unknown"));
+    }
+
     loading.style.display = "none";
 
     // Pick render style: ?wc=flat or ?wc=grouped in the URL overrides the default below.
@@ -1331,7 +1391,11 @@ function loadWhoComing(){
     count.textContent = total + " " + (total === 1 ? "person" : "people") + " coming so far!";
     list.style.display = "block";
   })
-  .catch(function(){
+  .catch(function(err){
+    if(mine !== whoComingRequest) return;
+    // Covers both the retries running out and a throw from the render code above;
+    // log it so a rendering bug is not silently blamed on the network.
+    console.error("who's-coming load failed", err);
     loading.style.display = "none";
     error.style.display   = "block";
   });
@@ -1425,22 +1489,40 @@ function enterEditMode(type, token){
   byId(cfg.formUi).style.display  = "none";
   byId(cfg.submitBtn).textContent = cfg.updateLabel;
 
-  fetch(cfg.webhook + "?edit=" + encodeURIComponent(token), {method:"GET"})
-  .then(function(res){ return res.json(); })
+  // The error box is rewritten in place for the unreachable-server case, so stash
+  // the authored "we couldn't find that RSVP" markup before it can be clobbered.
+  var errEl = byId(cfg.error);
+  if(errEl.dataset.notFoundHtml == null) errEl.dataset.notFoundHtml = errEl.innerHTML;
+
+  fetchJson(cfg.webhook + "?edit=" + encodeURIComponent(token))
   .then(function(data){
     byId(cfg.loading).style.display = "none";
     if(!data || !data.found){
+      // found:false also covers a backend exception (it returns {found:false,error}).
+      if(data && data.error) console.error("edit lookup backend error:", data.error);
       byId(cfg.banner).style.display = "none";
-      byId(cfg.error).style.display  = "block";
+      errEl.innerHTML = errEl.dataset.notFoundHtml;
+      errEl.style.display  = "block";
       return;
     }
     cfg.populate(data.record);
     byId(cfg.formUi).style.display = "block";
   })
-  .catch(function(){
+  .catch(function(err){
+    // The backend never answered, so we do not know whether the token is good.
+    // Saying "we couldn't find that RSVP" here would tell someone holding a
+    // perfectly valid link that it is broken, so offer a retry instead.
+    console.error("edit prefetch failed", err);
     byId(cfg.loading).style.display = "none";
     byId(cfg.banner).style.display  = "none";
-    byId(cfg.error).style.display   = "block";
+    errEl.innerHTML =
+      "We couldn&rsquo;t reach the server to load your RSVP. Your link is probably fine &mdash; " +
+      "this is usually a hiccup on our end." +
+      "<div style='margin-top:0.6rem'><button style='background:var(--cf-blue);color:#fff;border:none;" +
+      "padding:8px 16px;border-radius:4px;font-family:var(--sans);font-size:13px;font-weight:700;" +
+      "cursor:pointer'>Try again</button></div>";
+    errEl.querySelector("button").onclick = function(){ enterEditMode(type, token); };
+    errEl.style.display   = "block";
   });
 }
 
