@@ -67,8 +67,8 @@ editor if you'd rather not set it up. Just copy **both directions** so the two s
    no account flag on the command; account selection happens in the browser. Useful related
    commands:
    ```sh
-   clasp login --status   # show which account is currently logged in
-   clasp logout           # sign out, so you can clasp login as a different account
+   clasp show-authorized-user   # show which account is currently logged in
+   clasp logout                 # sign out, so you can clasp login as a different account
    ```
    On the consent screen, **check "Select all"** — these are clasp's declared scopes
    (Apps Script projects/deployments, the narrow `drive.file`, GCP config, logs), and
@@ -142,6 +142,148 @@ the same, so `index.html` needs no change.
 - **`shirts/` and `volunteer/`** are scaffolded but not yet populated — set their Script
   IDs and `clasp pull` to bring down their current code when you start on them. See
   `edit-link-extend-plan.md` and `add-email-shirts-volunteer-plan.md`.
+
+---
+
+## Emailing the whole RSVP list
+
+The organizer writes the email in a Google Doc, then sends it to every party from a menu in
+the RSVPs spreadsheet. One personalized message per party: addressed to the primary contact,
+copying any party members who gave their own email address. No BCC blast, and no party ever
+sees another party's addresses.
+
+**The mailer is not involved.** A spreadsheet menu runs as whoever clicks it, so the mail
+goes out from *that person's* account, on their sending quota, under their authorization.
+That is the point: a test run sends from the tester, and the identical code sends from
+`childrenfirstmail@gmail.com` when they run it. There is nothing to deploy and no dev/prod
+switch.
+
+**Sending:**
+
+1. Write the email in a Google Doc. **The doc's name becomes the subject line.** Use
+   `{{First Name}}`, `{{Last Name}}`, `{{Years}}`, `{{Total in Party}}`, or `{{Edit Link}}`
+   in the text and each recipient gets their own values. Share the doc so the sending
+   account can view it.
+2. Open the RSVPs spreadsheet → **Spiralpalooza → Choose template doc…** and paste the link.
+   This is remembered, so it's only needed when the doc changes.
+3. **Spiralpalooza → Preview recipients…** to check the counts and how the first recipient's
+   copy reads. Sends nothing.
+4. **Spiralpalooza → Send a test to myself…** to see the real thing in your own inbox before
+   anyone else does. Recommended whenever the doc has changed.
+5. **Spiralpalooza → Send to RSVP list…**, confirm the summary.
+
+**Who gets a copy.** One message per party, with the whole party on the To line: the `Email`
+column first, then any party members stored as `Name (rel) [email]`. Party members listed
+without an address just don't get one. Every address receives at most one copy per campaign,
+so if someone is both a party member on one row and a primary contact on their own row, the
+first row in the sheet claims them and the other is skipped.
+
+**What it skips:** anyone with `Attending = No`, a blank or malformed `Email`, a duplicate
+address, or `Do Not Email = Yes`. Put `Yes` in **Do Not Email** to take a whole party off the
+list for good.
+
+**Why it may take more than one run.** A consumer Gmail account is capped at **100 mail
+recipients per day**, and Google counts *recipients, not messages*, so a party of four costs
+four (see https://developers.google.com/apps-script/guides/services/quotas). Parties are
+never split across days: the run stops at the last whole party that fits. Each successful
+send is stamped on that row in **Broadcast Sent** / **Broadcast Sent At**, so a later run
+picks up exactly where it stopped and never double-sends. Renaming the doc starts a fresh
+campaign that includes everyone again, since the subject is the campaign key.
+
+**The "sends left today" figure is approximate.** Google documents
+`MailApp.getRemainingDailyQuota()` as valid "for the current execution", warning it "might
+vary between executions", and it has been seen drifting both up and down with no sends in
+between. Don't read anything into a move of one or two, and don't try to infer the reset
+schedule from it.
+
+**When to re-run.** The reset mechanism isn't documented and third-party accounts disagree,
+so the safe rule is: **re-run about a day after the previous run, at the same time of day or
+later.** Avoid "just wait until tomorrow" - the morning after an evening send may only be
+~11 hours later.
+
+`BROADCAST_DAILY_RESERVE` (default 10) exists partly to absorb that jitter, so a noisy
+reading can't push a run past the real cap. Lower it only if you understand you're spending
+that margin.
+
+The preview reports both numbers - parties and people - so check the people count against the
+100/day cap when estimating how many runs it will take.
+
+Google documents the cap as "Email recipients per day" and says quotas are "based on the
+number of email recipients", but no first-party page spells out how the individual address
+fields are counted. The batching assumes every address costs one, which is the safe
+assumption: if it's wrong the send just takes more passes than strictly necessary, and can
+never overrun the cap.
+
+To settle it for a given account, run **`runQuotaRecipientProbe`** from the Apps Script Run
+dropdown. It sends one message to three plus-addressed variants of the runner's own address,
+**2 on To and 1 on Cc**, and reads the counter. A drop of 3 is conclusive that every address
+counts in both fields: counting messages would give 1, counting only To would give 2, and
+only Cc would give 1, so nothing else produces 3. Both fields are covered so the answer
+stays valid if party members are ever moved back to Cc. It spends three real sends, so run
+it once per account, not routinely.
+
+**Testing it safely.** Use **Spiralpalooza → Send a test to myself…**. It builds an
+`RSVP_TEST` tab of made-up rows, runs the real send path against it, and emails only
+plus-addressed variants of whoever clicked (2 messages, 3 addresses, 3 of their own daily
+sends). The `RSVPs` tab is never read or written, so no real guest can be reached. It checks
+the filtering, party addressing, write-back and resume behaviour automatically, and then
+tells you what to look for in your inbox — the things no test can see, like the From name,
+reply-to, formatting and images.
+
+Three outcomes, kept deliberately distinct: **passed**, **FAILED** (an assertion threw; don't
+send to the list), and **did not run** (no template doc, or fewer than 5 sends left). The same
+function is `runBroadcastLiveTest` in the Run dropdown if you want the execution log.
+
+**Token gotcha.** The Docs HTML export splits text into spans wherever formatting changes, so
+a token that got partly bolded or autocorrected won't substitute. Preview warns about any
+`{{…}}` left unreplaced; retype those in the doc as plain text and preview again.
+
+**Formatting that survives:** the doc is exported as HTML, so headings, bold, italic, colour,
+links and lists come through, and images are converted to inline attachments so they render
+in Gmail. Three quirks of the export are corrected automatically in `tidyDocHtml_` /
+`makeImagesResponsive_`, all because Docs exports for a printed page rather than an email:
+
+- The page's one-inch margins arrive as `padding:72pt` on `<body>`.
+- List bullets are drawn with CSS `:before`, which Gmail strips, leaving markerless lists.
+- Images arrive as `data:` URIs, which Gmail refuses to render, at a fixed pixel size that
+  overflows a phone.
+
+**One thing to fix in the doc rather than in code:** if bullets look more spaced out in the
+email than in the doc, that's paragraph spacing on the list items. Docs hides it via "don't
+add space between paragraphs of the same style" but still exports it. Select the list and use
+**Format → Line & paragraph spacing → Remove space before/after paragraph**, or paint-format
+from a list that already looks right.
+
+**The Drive API has to be enabled, via the manifest.** The template is fetched by calling the
+Drive REST API directly rather than through the built-in `DriveApp` service (which would drag
+in a full read/write Drive scope). Built-in services need no setup, but a direct REST call
+makes the script an ordinary API client, metered against the Cloud project behind the script,
+and that project must have the API switched on. Otherwise every doc load fails with
+`HTTP 403, accessNotConfigured`.
+
+This is already handled: `rsvp/appsscript.json` declares the Drive advanced service under
+`dependencies.enabledAdvancedServices`, and **declaring the service is what enables the API**
+on the script's default Cloud project. Keep that block — deleting it breaks every doc load.
+
+Do **not** try to enable the API from the Cloud console. The script's default Cloud project
+isn't administrable there: the console reports a missing `resourcemanager.projects.get` and
+offers to request a role, but no administrator exists to grant it. That path is a dead end.
+
+If the editor's Services list ever loses Drive API (v3), re-add it there; it writes the same
+manifest block, so it won't fight with `clasp push -f`.
+
+**Scopes.** `apps-script/rsvp/appsscript.json` now declares its OAuth scopes explicitly
+rather than letting Apps Script infer them, because the Doc export calls the Drive REST API
+directly (inference only sees `UrlFetchApp` and would leave the token without Drive access).
+Declaring them also means scope changes show up in a diff instead of appearing silently.
+**Adding a service to `rsvp/Code.js` now requires adding its scope to that file**, or the
+call fails at runtime. `drive.readonly` is deliberate: reading a *Gmail draft* instead would
+require `https://mail.google.com/`, which grants read, send and delete over the whole
+mailbox of whoever clicks the menu.
+
+The next time someone cuts a **new RSVP web app version**, the deploying account has to
+re-consent to the expanded scope list. The current live deployment is pinned to its existing
+version and keeps working until then.
 
 ---
 

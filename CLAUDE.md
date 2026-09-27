@@ -39,8 +39,44 @@ python3 -m http.server 8000          # http://localhost:8000/index.html
 clasp pull / clasp push -f / clasp deploy -i <deploymentId> -d "…"
 ```
 
-Backend tests run **in the Apps Script editor**, not the CLI: run `runAllRsvpTests` and
-`runEmailTests` from the Run dropdown (functions ending in `_` are hidden from it).
+Backend tests run **in the Apps Script editor**, not the CLI: run `runAllRsvpTests`,
+`runEmailTests`, and `runBroadcastTests` from the Run dropdown (functions ending in `_` are
+hidden from it).
+
+**Two of the Run-dropdown entries send real email.** Both are meant to; don't "fix" them:
+
+- **`runAllRsvpTests` sends one confirmation email per run.** `testDoPost_endToEnd_` calls the
+  real `doPost`, which is the point of it — the send path is part of what's under test. The
+  mail goes to the address in `fullPayload_` and, because it routes through the mailer, it
+  spends one of **childrenfirstmail's** 100 daily recipients, not the runner's.
+- **`runQuotaRecipientProbe` sends three**, all plus-addressed variants of the runner's own
+  address (2 on To, 1 on Cc), to measure whether every address counts against the daily cap,
+  which is what the broadcast batching assumes. Run it by hand, once per sending account,
+  never as part of a suite.
+- **`runBroadcastLiveTest` sends two** (to three recipients), also all the runner's own
+  addresses. It points production code at the `RSVP_TEST` tab and exercises the whole send
+  path. Usually reached as **Spiralpalooza → Send a test to myself…** in the sheet; the
+  Run-dropdown entry is the same function. See the broadcast section of `README.md`.
+
+  It returns `{ok, message}` rather than only logging, because the menu wrapper
+  (`testBroadcastFromMenu`) has to tell three outcomes apart: passed, failed (an assertion
+  threw), and never ran (no template doc, or too little quota). A bail-out reported as a
+  pass would tell an organizer the send path works when it was never exercised — keep that
+  distinction if you touch it.
+
+`runEmailTests` and `runBroadcastTests` are pure — HTML generation and grid filtering only.
+
+The quota overlap matters on a broadcast day: the RSVP list send draws from that same
+childrenfirstmail pool, so repeatedly re-running `runAllRsvpTests` eats into it.
+
+Bulk email to the RSVP list ("Spiralpalooza" menu in the RSVPs sheet) uses a Google Doc as
+the template and **does not go through the mailer**. A menu item runs as whoever clicks it,
+so the sender, quota, and authorization are the clicking user's - which is what makes the
+same code a safe test run for one person and the real send for childrenfirstmail, with no
+deployment involved. The template is a Doc rather than a Gmail draft so the project never
+needs mailbox scope. `rsvp/appsscript.json` declares its OAuth scopes explicitly, so any new
+service used in `rsvp/Code.js` needs its scope added there too. See "Emailing the whole RSVP
+list" in `README.md`.
 
 ## Working notes
 

@@ -39,7 +39,8 @@ var RSVP_HEADERS = [
   'Timestamp', 'First Name', 'Last Name', 'Email', 'Phone', 'Mailing Address',
   'Years at Children First', 'Attending', 'Role / Affiliation', 'Party Members',
   'Total in Party', 'List Permission', 'Private Notes', 'Public Notes',
-  'Pizza GF', 'Pizza Vegan', 'Pizza GF+Vegan', 'Edit Token', 'Last Updated'
+  'Pizza GF', 'Pizza Vegan', 'Pizza GF+Vegan', 'Edit Token', 'Last Updated',
+  'Do Not Email', 'Broadcast Sent', 'Broadcast Sent At'
 ];
 
 // ---- Write path (doPost) ---------------------------------------------------
@@ -447,6 +448,622 @@ function esc_(s) {
   return String(s == null ? '' : s)
     .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;');
+}
+
+// ---- Broadcast: send a Google Doc to the whole RSVP list --------------------
+//
+// The organizer writes the email in a Google Doc, then runs "Spiralpalooza >
+// Send to RSVP list" from this spreadsheet's menu. One message goes to each
+// party's primary contact (the Email column), personalized via {{First Name}}-style
+// tokens. The Doc's FILE NAME is the subject line.
+//
+// Three things shape the design:
+//
+//   1. A menu item runs as whoever clicks it, NOT as the web app's "execute as"
+//      identity. So the sender, the sending quota, and the authorization are all
+//      the clicking user's. That is deliberate: it means a test run sends from the
+//      tester's own account and spends the tester's own quota, and the exact same
+//      code sends from childrenfirstmail when they run it. No deploy, no dev/prod
+//      switch, and the mailer microservice is not involved at all.
+//   2. The template lives in a Doc rather than a Gmail draft on purpose. Reading a
+//      Gmail draft needs https://mail.google.com/ (read, send AND delete all mail),
+//      which anyone with edit access to this sheet could then quietly use the next
+//      time an organizer clicks a menu item. A Doc needs only read access to Drive.
+//   3. childrenfirstmail is a consumer gmail.com account: 100 mail recipients per
+//      day. A list bigger than that has to span days, so every successful send is
+//      recorded on its row and a re-run picks up exactly where the last one stopped.
+
+// Remembers the template Doc between runs, so the subject/body is set once and the
+// send is a two-click operation. Script-level so every organizer shares one doc.
+var BROADCAST_DOC_PROPERTY = 'BROADCAST_DOC_ID';
+
+// Stay under the 100/day consumer quota with room for RSVP confirmations that may
+// still go out the same day.
+//
+// getRemainingDailyQuota() is approximate. Google calls it valid "for the current
+// execution", warning it "might vary between executions", and it has been observed
+// moving in BOTH directions with no sends in between. So treat small movements as
+// noise, don't infer the reset mechanism from them, and re-read it every run rather
+// than caching a figure or keeping a counter of our own.
+//
+// This reserve is what absorbs that noise, on top of leaving room for the day's RSVP
+// confirmations. It is the reason a jittery reading can't push a run past the real cap.
+//
+// The reset mechanism is genuinely unknown: Google's quota page doesn't state it, and
+// third-party accounts disagree. Keep it out of user-facing copy. The advice that holds
+// under every candidate model is "re-run about a day later, same time of day or later".
+var BROADCAST_DAILY_RESERVE = 10;
+
+// Apps Script kills a script at 6 minutes, so stop well short and let the organizer
+// re-run rather than dying mid-list.
+var BROADCAST_TIME_BUDGET_MS = 4 * 60 * 1000;
+
+function onOpen() {
+  SpreadsheetApp.getUi()
+    .createMenu('Spiralpalooza')
+    .addItem('Choose template doc…', 'setBroadcastDoc')
+    .addItem('Preview recipients…', 'previewBroadcast')
+    .addSeparator()
+    .addItem('Send a test to myself…', 'testBroadcastFromMenu')
+    .addSeparator()
+    // Kept alone at the bottom, behind its own separator: it is the only item here
+    // that mails anyone other than the person clicking.
+    .addItem('Send to RSVP list…', 'sendBroadcast')
+    .addToUi();
+}
+
+// Which rows this run would email, and why the others are being skipped. Pure
+// function over a sheet grid (no sheet, mail, or UI calls) so the filtering rules
+// are unit-testable. `campaign` is the draft's subject: a row counts as done only
+// for the campaign already recorded against it, so sending a NEW subject
+// automatically re-includes everyone without any log to clear.
+function broadcastPlan_(grid, campaign) {
+  var col = {};
+  grid[0].forEach(function (h, i) { col[String(h).trim()] = i; });
+
+  var plan = {
+    pending: [], alreadySent: 0, totalRecipients: 0, skipped: [],
+    skippedRegret: 0, skippedOptOut: 0, skippedNoEmail: 0, skippedDuplicate: 0
+  };
+  var seen = {};
+
+  for (var i = 1; i < grid.length; i++) {
+    var r = grid[i];
+    var get = function (name) { return col[name] != null ? r[col[name]] : ''; };
+
+    var email = String(get('Email') || '').trim();
+    // Recorded alongside every skip so a count like "no valid email: 1" can be traced
+    // back to an actual row without hunting through the sheet by hand.
+    var note = function (reason) {
+      plan.skipped.push({
+        rowNumber: i + 1,
+        reason: reason,
+        name: (String(get('First Name') || '').trim() + ' ' +
+               String(get('Last Name') || '').trim()).trim(),
+        email: email
+      });
+    };
+
+    // Blank Attending means yes (rsvpRow_ defaults it), so only an explicit no is a regret.
+    if (String(get('Attending')).trim().toLowerCase() === 'no') {
+      plan.skippedRegret++; note('not attending'); continue;
+    }
+    if (String(get('Do Not Email')).trim().toLowerCase() === 'yes') {
+      plan.skippedOptOut++; note('opted out'); continue;
+    }
+
+    if (!email || email.indexOf('@') === -1) {
+      plan.skippedNoEmail++; note(email ? 'malformed email' : 'no email'); continue;
+    }
+
+    // Dedupe before the already-sent check: if someone RSVP'd twice, the second row
+    // is a duplicate whether or not the first one has gone out yet.
+    var key = email.toLowerCase();
+    if (seen[key]) { plan.skippedDuplicate++; note('duplicate address'); continue; }
+    seen[key] = true;
+
+    // Party members who gave their own address are addressed on the party's message
+    // alongside the primary contact. Claim them in `seen` even when this row turns
+    // out to be already sent, so a later row that lists the same person can't send
+    // them a second copy. Order decides who claims a shared address: first row in
+    // the sheet wins.
+    var partyEmails = [];
+    parseParty_(get('Party Members')).forEach(function (m) {
+      var memberEmail = String(m.email || '').trim();
+      if (!memberEmail || memberEmail.indexOf('@') === -1) return;
+      var memberKey = memberEmail.toLowerCase();
+      if (seen[memberKey]) return;
+      seen[memberKey] = true;
+      partyEmails.push(memberEmail);
+    });
+
+    if (String(get('Broadcast Sent')).trim() === campaign) { plan.alreadySent++; continue; }
+
+    plan.pending.push({
+      rowNumber: i + 1,                     // 1-based sheet row, for the write-back
+      email: email,
+      partyEmails: partyEmails,
+      // Google's daily cap counts recipients, not messages, so a party of four costs
+      // four. The batching maths needs this, not the number of rows.
+      recipientCount: 1 + partyEmails.length,
+      fields: {
+        'first name':     String(get('First Name') || '').trim(),
+        'last name':      String(get('Last Name') || '').trim(),
+        'email':          email,
+        'years':          String(get('Years at Children First') || '').trim(),
+        'total in party': String(get('Total in Party') || '').trim(),
+        'edit link':      editUrlForToken_(get('Edit Token'))
+      }
+    });
+    plan.totalRecipients += 1 + partyEmails.length;
+  }
+  return plan;
+}
+
+// Take whole parties, in sheet order, until the next one would not fit in the
+// remaining daily quota. Parties are never split across two days: everyone in a
+// household should get the mail at the same time, and a partially-sent row can't
+// be recorded honestly in one "Broadcast Sent" cell.
+function takeWithinQuota_(pending, allowed) {
+  var batch = [], recipients = 0;
+  for (var i = 0; i < pending.length; i++) {
+    if (recipients + pending[i].recipientCount > allowed) break;
+    batch.push(pending[i]);
+    recipients += pending[i].recipientCount;
+  }
+  return { batch: batch, recipients: recipients };
+}
+
+function editUrlForToken_(token) {
+  if (!token) return '';
+  var sep = SITE_URL.indexOf('?') === -1 ? '?' : '&';
+  return SITE_URL + sep + 'edit=' + token + '&type=rsvp';
+}
+
+// Substitute {{First Name}} / {{Edit Link}} / etc. Matching is case- and
+// space-insensitive so {{first name}} and {{ First Name }} both work. An unknown
+// token is left in place rather than blanked, so a typo shows up in the preview
+// instead of silently deleting text from everyone's email.
+function renderTemplate_(html, fields) {
+  return String(html).replace(/\{\{\s*([^{}]+?)\s*\}\}/g, function (whole, key) {
+    var k = key.trim().toLowerCase();
+    return Object.prototype.hasOwnProperty.call(fields, k) ? esc_(fields[k]) : whole;
+  });
+}
+
+// Any leftover {{Token}} in the rendered output. Google Docs splits a run of text
+// into separate spans whenever formatting changes, so a token that got partly
+// bolded or autocorrected comes out of the export broken and silently fails to
+// substitute. Surfacing leftovers in the preview turns that into a visible warning
+// instead of 90 people receiving "Hi {{First Name}}".
+function findLeftoverTokens_(html) {
+  var found = String(html).match(/\{\{[^{}]*\}\}/g) || [];
+  var uniq = [];
+  found.forEach(function (t) { if (uniq.indexOf(t) === -1) uniq.push(t); });
+  return uniq;
+}
+
+// Accepts a full Doc URL or a bare file ID. Doc IDs are long enough that the
+// "longest id-ish run" heuristic can't be confused by the rest of the URL.
+function extractDocId_(urlOrId) {
+  var s = String(urlOrId || '').trim();
+  if (!s) return '';
+  var m = s.match(/\/d\/([-\w]{20,})/);      // .../document/d/<id>/edit
+  if (m) return m[1];
+  m = s.match(/[?&]id=([-\w]{20,})/);        // ...?id=<id>
+  if (m) return m[1];
+  return /^[-\w]{20,}$/.test(s) ? s : '';
+}
+
+// Drive read calls go through the REST API with the script's own token rather than
+// DriveApp, because DriveApp would pull in the full read/write Drive scope. The
+// manifest asks for drive.readonly only, which is all these two calls need.
+function driveFetch_(url) {
+  return UrlFetchApp.fetch(url, {
+    headers: { Authorization: 'Bearer ' + ScriptApp.getOAuthToken() },
+    muteHttpExceptions: true
+  });
+}
+
+// Load the template: {ok, subject, htmlBody} where the subject is the Doc's name.
+// Using the file name as the subject keeps the campaign key stable across the
+// multi-day sends the 100/day quota forces, with nothing to retype.
+function loadBroadcastDoc_(docId) {
+  if (!docId) return { ok: false, error: 'No template doc chosen yet. Use "Choose template doc…" first.' };
+
+  try {
+    var meta = driveFetch_('https://www.googleapis.com/drive/v3/files/' + encodeURIComponent(docId) + '?fields=name,mimeType');
+    if (meta.getResponseCode() !== 200) return { ok: false, error: driveError_('Opening the doc', meta) };
+
+    var info = JSON.parse(meta.getContentText());
+    if (info.mimeType !== 'application/vnd.google-apps.document') {
+      return { ok: false, error: 'That file is not a Google Doc (' + info.mimeType + ').' };
+    }
+
+    var exported = driveFetch_('https://www.googleapis.com/drive/v3/files/' +
+                               encodeURIComponent(docId) + '/export?mimeType=text/html');
+    if (exported.getResponseCode() !== 200) return { ok: false, error: driveError_('Exporting the doc', exported) };
+
+    var prepared = inlineImagesFromHtml_(makeImagesResponsive_(tidyDocHtml_(exported.getContentText())));
+    return {
+      ok: true,
+      subject: String(info.name).trim(),
+      htmlBody: prepared.html,
+      images: prepared.images
+    };
+  } catch (err) {
+    return { ok: false, error: String(err) };
+  }
+}
+
+// Google exports Doc images as data: URIs. Gmail and most other clients strip those
+// from <img src>, so the picture arrives in the message and is then thrown away at
+// display time. Lift each one out into a real inline attachment and point the <img>
+// at a cid: reference, which is what email actually supports.
+//
+// Returns { html, images } ready for MailApp's inlineImages option. Done once per
+// doc rather than per recipient: the base64 is the same for everyone and decoding a
+// large image ninety times over would be pure waste.
+function inlineImagesFromHtml_(html) {
+  var images = {};
+  var count = 0;
+
+  var out = String(html).replace(/src="data:([^;"]+);base64,([^"]*)"/gi, function (whole, mimeType, data) {
+    var cid = 'docimg' + (++count);
+    try {
+      images[cid] = Utilities.newBlob(Utilities.base64Decode(data), mimeType, cid);
+      return 'src="cid:' + cid + '"';
+    } catch (err) {
+      // A cid: pointing at a blob that doesn't exist renders worse than the original,
+      // so on failure leave the data URI exactly as it was.
+      console.error('inline image ' + cid + ' could not be decoded: ' + err);
+      count--;
+      return whole;
+    }
+  });
+
+  return { html: out, images: images };
+}
+
+// Google exports a Doc as a printed page, not an email. Two things need undoing:
+//
+//   1. The page's one-inch margins arrive as padding:72pt on all four sides of
+//      <body>, which reads as a huge white border in a mail client.
+//   2. List bullets are drawn with CSS ":before { content: '●' }" rules and
+//      list-style-type:none, and Gmail strips pseudo-elements - so lists arrive
+//      indented but with no markers. Dropping the <style> block (which in this
+//      export contains nothing but those list rules) and asking the list element
+//      for real markers fixes it, and avoids doubled bullets in the clients that
+//      do honour :before.
+function tidyDocHtml_(html) {
+  return String(html)
+    .replace(/(<body\b[^>]*style="[^"]*?)padding:[^;"]*/i, '$1padding:0 12pt')
+    .replace(/<style[^>]*>[\s\S]*?<\/style>/gi, '')
+    .replace(/<ul\b([^>]*)style="/gi, '<ul$1style="list-style-type:disc;')
+    .replace(/<ol\b([^>]*)style="/gi, '<ol$1style="list-style-type:decimal;')
+    // Docs sometimes starts a list item with a tiny Times New Roman non-breaking
+    // space - the remains of the tab that once separated a manual bullet from its
+    // text. Docs renders it as nothing, so the doc looks right while the email shows
+    // a stray gap. It appears on some items and not others, which is why the spacing
+    // comes out uneven.
+    .replace(/(<li\b[^>]*>)\s*<span[^>]*>(?:&nbsp;|\s)+<\/span>/gi, '$1');
+}
+
+// Docs sizes an image twice: a wrapper span carrying the page-layout box (with
+// overflow:hidden), and the same fixed width/height again on the <img>. Fixed px on
+// both means the picture can't shrink on a phone - it just gets clipped by the span.
+// Relax the wrapper and let the image scale.
+//
+// Split out from tidyDocHtml_ because it must run in two passes: the wrapper span is
+// only identifiable by its overflow:hidden, which the <img> rule would otherwise have
+// no way to distinguish from any other span.
+function makeImagesResponsive_(html) {
+  return String(html)
+    .replace(/<span([^>]*)style="([^"]*)"([^>]*)>(\s*<img)/gi,
+      function (whole, before, style, after, imgStart) {
+        // overflow:hidden is what marks this as Docs' image box rather than a text span.
+        if (!/overflow\s*:\s*hidden/i.test(style)) return whole;
+        var relaxed = style
+          .replace(/overflow\s*:\s*hidden\s*;?/gi, '')
+          .replace(/(^|;)\s*width\s*:\s*[\d.]+px\s*;?/gi, '$1')
+          .replace(/(^|;)\s*height\s*:\s*[\d.]+px\s*;?/gi, '$1');
+        return '<span' + before + 'style="' + relaxed + '"' + after + '>' + imgStart;
+      })
+    // Replace the img's style outright rather than prefixing it: the fixed width and
+    // height come later in the declaration and would win over anything prepended,
+    // which is what stopped the earlier attempt at this from working.
+    .replace(/(<img\b[^>]*?)style="[^"]*"/gi, '$1style="max-width:100%;height:auto"');
+}
+
+// A bare Drive status code can't be acted on: 403 covers a disabled Drive API, a
+// token missing the scope, and a file the account can't see, and the three have
+// completely different fixes. Google names which one it is in the response body,
+// so surface that instead of the number alone.
+function driveError_(what, res) {
+  var body = String(res.getContentText() || '');
+  var detail = body.slice(0, 400);
+  var reason = '';
+  try {
+    var parsed = JSON.parse(body);
+    if (parsed && parsed.error) {
+      if (parsed.error.message) detail = parsed.error.message;
+      if (parsed.error.errors && parsed.error.errors[0] && parsed.error.errors[0].reason) {
+        reason = parsed.error.errors[0].reason;
+      }
+      if (!reason && parsed.error.status) reason = parsed.error.status;
+    }
+  } catch (e) { /* not JSON, fall back to the raw body */ }
+
+  console.error(what + ' failed: HTTP ' + res.getResponseCode() + ' ' + body);
+  return what + ' failed (HTTP ' + res.getResponseCode() +
+         (reason ? ', ' + reason : '') + ').\n\n' + detail;
+}
+
+function broadcastDocId_() {
+  return PropertiesService.getScriptProperties().getProperty(BROADCAST_DOC_PROPERTY) || '';
+}
+
+// ---- Broadcast menu handlers ------------------------------------------------
+
+function setBroadcastDoc() {
+  var ui = SpreadsheetApp.getUi();
+  var res = ui.prompt('Choose template doc',
+    'Paste the link to the Google Doc holding the email.\n\n' +
+    'The doc\'s NAME becomes the subject line. Use {{First Name}}, {{Last Name}}, ' +
+    '{{Years}}, {{Total in Party}} or {{Edit Link}} in the text to personalize it.',
+    ui.ButtonSet.OK_CANCEL);
+  if (res.getSelectedButton() !== ui.Button.OK) return;
+
+  var docId = extractDocId_(res.getResponseText());
+  if (!docId) { ui.alert('That doesn\'t look like a Google Doc link.'); return; }
+
+  var doc = loadBroadcastDoc_(docId);
+  if (!doc.ok) { ui.alert('Could not open that doc', String(doc.error), ui.ButtonSet.OK); return; }
+
+  PropertiesService.getScriptProperties().setProperty(BROADCAST_DOC_PROPERTY, docId);
+  ui.alert('Template set', 'Using "' + doc.subject + '" as the email, and as the subject line.', ui.ButtonSet.OK);
+}
+
+// Menu wrapper around runBroadcastLiveTest. The Run-dropdown version reports through
+// the execution log, which an organizer will never open, so this asks first and puts
+// the outcome in a dialog. Three outcomes have to stay distinguishable: passed,
+// failed, and never actually ran.
+function testBroadcastFromMenu() {
+  var ui = SpreadsheetApp.getUi();
+  var me = effectiveUser_();
+
+  var confirmed = ui.alert('Send a test to yourself?',
+    'This runs the whole send, start to finish, against made-up rows in a "' + TEST_SHEET_NAME +
+    '" tab.\n\n' +
+    'It emails 2 messages to 3 addresses, all variants of ' + me + '. Nobody on the RSVP list ' +
+    'is contacted, and the ' + RSVP_SHEET_NAME + ' tab is not touched.\n\n' +
+    'It uses 3 of your own daily sends.',
+    ui.ButtonSet.YES_NO);
+  if (confirmed !== ui.Button.YES) return;
+
+  var result;
+  try {
+    result = runBroadcastLiveTest();
+  } catch (err) {
+    // An assertion threw, which means the send path is genuinely broken. Say so
+    // plainly rather than leaving it to the log.
+    ui.alert('Test FAILED',
+      String((err && err.message) || err) +
+      '\n\nSomething in the broadcast is not behaving as expected. Do not send to the RSVP ' +
+      'list until this passes.',
+      ui.ButtonSet.OK);
+    return;
+  }
+
+  if (!result || !result.ok) {
+    ui.alert('Test did not run', String((result && result.message) || 'Unknown reason.'),
+      ui.ButtonSet.OK);
+    return;
+  }
+  ui.alert('Test passed', result.message, ui.ButtonSet.OK);
+}
+
+function previewBroadcast() {
+  var ui = SpreadsheetApp.getUi();
+  var doc = loadBroadcastDoc_(broadcastDocId_());
+  if (!doc.ok) { ui.alert('Could not load the template', String(doc.error), ui.ButtonSet.OK); return; }
+
+  var plan = broadcastPlan_(broadcastGrid_(), doc.subject);
+  var sample = '';
+  if (plan.pending.length) {
+    var rendered = renderTemplate_(doc.htmlBody, plan.pending[0].fields);
+    sample = '\n\nFirst recipient: ' + plan.pending[0].email +
+             '\n\nTheir copy begins:\n' + stripTags_(rendered).slice(0, 400) +
+             leftoverWarning_(findLeftoverTokens_(rendered));
+  }
+  ui.alert('Preview: ' + doc.subject, planSummary_(plan, doc) + sample, ui.ButtonSet.OK);
+}
+
+function sendBroadcast() {
+  var ui = SpreadsheetApp.getUi();
+  var doc = loadBroadcastDoc_(broadcastDocId_());
+  if (!doc.ok) { ui.alert('Could not load the template', String(doc.error), ui.ButtonSet.OK); return; }
+
+  var sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(RSVP_SHEET_NAME);
+  ensureHeaders_(sheet);   // make sure the Broadcast Sent columns exist before writing back
+
+  var plan = broadcastPlan_(broadcastGrid_(), doc.subject);
+  if (!plan.pending.length) {
+    ui.alert('Nothing to send', planSummary_(plan, doc), ui.ButtonSet.OK);
+    return;
+  }
+
+  // Quota, sender and authorization all belong to whoever clicked this menu item.
+  var remaining = MailApp.getRemainingDailyQuota();
+  var allowed = Math.max(0, remaining - BROADCAST_DAILY_RESERVE);
+  var take = takeWithinQuota_(plan.pending, allowed);
+  if (!take.batch.length) {
+    ui.alert('Not enough daily quota left',
+      quotaBlockedMessage_(effectiveUser_(), remaining, BROADCAST_DAILY_RESERVE,
+                           plan.pending[0].recipientCount) +
+      '\n\n' + planSummary_(plan, doc),
+      ui.ButtonSet.OK);
+    return;
+  }
+
+  var leftovers = findLeftoverTokens_(renderTemplate_(doc.htmlBody, plan.pending[0].fields));
+  var remainingParties = plan.pending.length - take.batch.length;
+  var confirm = ui.alert('Send "' + doc.subject + '"?',
+    planSummary_(plan, doc) +
+    '\n\nSending as: ' + effectiveUser_() +
+    '\nThis run sends ' + take.batch.length + ' message' + (take.batch.length === 1 ? '' : 's') +
+    ' to ' + take.recipients + ' recipient' + (take.recipients === 1 ? '' : 's') + ' now.' +
+    (remainingParties ? ' The other ' + remainingParties + ' parties need another run.' : '') +
+    leftoverWarning_(leftovers) +
+    '\n\nThis cannot be undone.',
+    ui.ButtonSet.YES_NO);
+  if (confirm !== ui.Button.YES) return;
+
+  var result = runBroadcast_(sheet, doc, take.batch);
+  ui.alert('Broadcast finished',
+    'Sent: ' + result.sent +
+    '\nFailed: ' + result.failed +
+    '\nStill waiting: ' + (plan.pending.length - result.sent) +
+    (result.stoppedEarly ? '\n\nStopped early to stay inside the script time limit. Re-run to continue.' : '') +
+    (result.errors.length ? '\n\nFirst errors:\n' + result.errors.slice(0, 5).join('\n') : ''),
+    ui.ButtonSet.OK);
+}
+
+// Send to each recipient, marking the row immediately after each success so an
+// interruption (timeout, quota, crash) can never double-send on the next run.
+function runBroadcast_(sheet, doc, recipients) {
+  var headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0]
+    .map(function (h) { return String(h).trim(); });
+  var sentCol = headers.indexOf('Broadcast Sent') + 1;
+  var atCol   = headers.indexOf('Broadcast Sent At') + 1;
+
+  var started = Date.now();
+  var out = { sent: 0, failed: 0, stoppedEarly: false, errors: [] };
+
+  for (var i = 0; i < recipients.length; i++) {
+    if (Date.now() - started > BROADCAST_TIME_BUDGET_MS) { out.stoppedEarly = true; break; }
+
+    var to = recipients[i];
+    try {
+      // The whole party goes on the To line, primary contact first. The greeting still
+      // uses the primary contact's first name, so it reads as household mail rather
+      // than as one person's copy that others were shown.
+      var message = {
+        to: [to.email].concat(to.partyEmails || []).join(','),
+        subject: doc.subject,
+        htmlBody: renderTemplate_(doc.htmlBody, to.fields),
+        name: 'Spiralpalooza',                 // same display name as the confirmations
+        replyTo: 'childrenfirstmail@gmail.com' // replies go to Children First, not the sender
+      };
+      // Only set inlineImages when there are some: an empty map makes MailApp send a
+      // multipart/related message with no parts, which some clients render badly.
+      if (doc.images && Object.keys(doc.images).length) message.inlineImages = doc.images;
+      MailApp.sendEmail(message);
+      if (sentCol > 0) sheet.getRange(to.rowNumber, sentCol).setValue(doc.subject);
+      if (atCol > 0)   sheet.getRange(to.rowNumber, atCol).setValue(new Date());
+      out.sent++;
+    } catch (err) {
+      out.failed++;
+      out.errors.push(to.email + ': ' + err);
+      console.error('broadcast send failed for ' + to.email + ': ' + err);
+    }
+  }
+  return out;
+}
+
+// Lists every row the broadcast will pass over, with the sheet row number and why.
+// Run from the Run dropdown; reads only, sends nothing. The counts in the preview
+// dialog say how many are skipped, this says which.
+function logSkippedRows() {
+  var doc = loadBroadcastDoc_(broadcastDocId_());
+  // The campaign only affects the already-sent tally, which isn't a skip reason, so
+  // an unset or unreachable template still gives a usable report.
+  var plan = broadcastPlan_(broadcastGrid_(), doc.ok ? doc.subject : '');
+
+  Logger.log('Sheet: %s', RSVP_SHEET_NAME);
+  Logger.log('Sending to %s parties (%s people). Skipping %s rows:',
+             plan.pending.length, plan.totalRecipients, plan.skipped.length);
+
+  if (!plan.skipped.length) { Logger.log('  (none)'); return; }
+
+  plan.skipped.forEach(function (s) {
+    Logger.log('  row %s  |  %s  |  %s  |  %s',
+               s.rowNumber, s.reason, s.name || '(no name)', s.email || '(blank)');
+  });
+}
+
+function broadcastGrid_() {
+  return SpreadsheetApp.getActiveSpreadsheet().getSheetByName(RSVP_SHEET_NAME).getDataRange().getValues();
+}
+
+function effectiveUser_() {
+  return Session.getEffectiveUser().getEmail() || '(unknown account)';
+}
+
+// Explain a blocked send by showing the whole sum, not just the ends of it. Quoting
+// only "83 left, needs 2" reads as nonsense, because the reserve is the term doing
+// the work and it is invisible from the outside. Pure, so the arithmetic is tested.
+function quotaBlockedMessage_(account, remaining, reserve, needed) {
+  var available = Math.max(0, remaining - reserve);
+  // No column padding: ui.alert renders proportional text, so spaces align nothing.
+  var lines = [
+    'Google counts recipients, not messages, and allows 100 per day on a consumer Gmail account.',
+    '',
+    'Account: ' + account,
+    'Left today: ' + remaining,
+    'Held back as reserve: ' + reserve + ' (BROADCAST_DAILY_RESERVE, kept free for RSVP confirmations)',
+    'Available to this broadcast: ' + available,
+    'Needed by the next party: ' + needed
+  ];
+
+  // Advice only, no mechanism: the reset behaviour isn't established, and the figure above
+  // is itself approximate. Waiting a full day is safe under every candidate model, while
+  // plain "tomorrow" is not - the morning after an evening send may only be ~11 hours later.
+  //
+  // Both branches end with this. The reserve branch is the one most often seen in practice
+  // (with a reserve of 10 and a party of 2 it covers 2-11 remaining, against 0-1 for the
+  // other), so it must not be the one left with vaguer instructions.
+  var whenToRetry = 'Re-run about a day after this one, at the same time of day or later - ' +
+                    'the morning after an evening send may be too soon. It resumes where it ' +
+                    'stopped.';
+
+  // Distinguish "out of quota" from "the reserve is in the way": only the latter has a
+  // second, immediate fix.
+  if (remaining >= needed && available < needed) {
+    lines.push('',
+      'There is enough real quota - the reserve is what is blocking the send. Either lower ' +
+      'BROADCAST_DAILY_RESERVE in the script to send now, or leave it as is and wait.');
+  }
+  lines.push('', whenToRetry);
+  return lines.join('\n');
+}
+
+function leftoverWarning_(tokens) {
+  if (!tokens.length) return '';
+  return '\n\nWARNING: these tokens did not substitute and will appear literally: ' +
+         tokens.join(', ') +
+         '\nRetype them in the doc as plain unformatted text, then preview again.';
+}
+
+function planSummary_(plan, doc) {
+  return 'Subject (from the doc name): ' + doc.subject +
+    // Named out loud because the live test points this same code at a test tab, and
+    // "which sheet am I about to mail?" is the one question worth answering twice.
+    '\nReading from sheet: ' + RSVP_SHEET_NAME +
+    '\n\nParties to send: ' + plan.pending.length +
+    '\nPeople they reach: ' + plan.totalRecipients + ' (primary contacts plus party members ' +
+    'who gave an address)' +
+    '\nAlready sent this message: ' + plan.alreadySent +
+    '\nSkipped - not attending: ' + plan.skippedRegret +
+    '\nSkipped - opted out: ' + plan.skippedOptOut +
+    '\nSkipped - no valid email: ' + plan.skippedNoEmail +
+    '\nSkipped - duplicate address: ' + plan.skippedDuplicate +
+    '\n\nSends left on this account today: ' + MailApp.getRemainingDailyQuota();
+}
+
+// Rough text view of rendered HTML, just for the preview dialog.
+function stripTags_(html) {
+  return String(html).replace(/<[^>]*>/g, ' ').replace(/&nbsp;/g, ' ').replace(/\s+/g, ' ').trim();
 }
 
 // Quick and dirty test function, just intended to be called by hand.
@@ -990,4 +1607,723 @@ function runEmailTests() {
   testEmail_regretAndEditLink_();
   testPickSiteBase_();
   Logger.log('ALL EMAIL HTML TESTS PASSED');
+}
+
+// ============================================================================
+//  BROADCAST TESTS
+// ============================================================================
+//
+// broadcastPlan_ and renderTemplate_ are pure, so these build grids in memory
+// instead of touching a sheet. Nothing here sends mail or calls the mailer.
+
+// Build a grid (header row + data rows) from {header: value} objects, so a test
+// only has to state the columns it cares about.
+function broadcastGridOf_(rows, headers) {
+  headers = headers || RSVP_HEADERS;
+  var grid = [headers.slice()];
+  rows.forEach(function (r) {
+    grid.push(headers.map(function (h) {
+      return Object.prototype.hasOwnProperty.call(r, h) ? r[h] : '';
+    }));
+  });
+  return grid;
+}
+
+function testBroadcastPlan_filters_() {
+  Logger.log('testBroadcastPlan_filters_');
+  var plan = broadcastPlan_(broadcastGridOf_([
+    { 'First Name': 'Ada',    'Email': 'ada@example.com',   'Attending': 'Yes' },
+    { 'First Name': 'Grace',  'Email': 'grace@example.com', 'Attending': '' },      // blank = attending
+    { 'First Name': 'Alan',   'Email': 'alan@example.com',  'Attending': 'No' },    // regret
+    { 'First Name': 'Edsger', 'Email': '',                  'Attending': 'Yes' },   // no address
+    { 'First Name': 'Barbara','Email': 'not-an-email',      'Attending': 'Yes' },   // malformed
+    { 'First Name': 'Ada2',   'Email': 'ADA@example.com',   'Attending': 'Yes' },   // dupe, different case
+    { 'First Name': 'Ken',    'Email': 'ken@example.com',   'Attending': 'Yes', 'Do Not Email': 'Yes' }
+  ]), 'One week out');
+
+  assertEquals_('pending count', 2, plan.pending.length);
+  assertEquals_('pending 1', 'ada@example.com', plan.pending[0].email);
+  assertEquals_('pending 2', 'grace@example.com', plan.pending[1].email);
+  assertEquals_('skipped regret', 1, plan.skippedRegret);
+  assertEquals_('skipped no email', 2, plan.skippedNoEmail);
+  assertEquals_('skipped duplicate', 1, plan.skippedDuplicate);
+  assertEquals_('skipped opt out', 1, plan.skippedOptOut);
+}
+
+function testBroadcastPlan_recordsWhichRowsAreSkipped_() {
+  Logger.log('testBroadcastPlan_recordsWhichRowsAreSkipped_');
+  var plan = broadcastPlan_(broadcastGridOf_([
+    { 'First Name': 'Ada',    'Last Name': 'Lovelace', 'Email': 'ada@example.com' },
+    { 'First Name': 'Alan',   'Last Name': 'Turing',   'Email': 'alan@example.com', 'Attending': 'No' },
+    { 'First Name': 'Edsger', 'Last Name': 'Dijkstra', 'Email': '' },
+    { 'First Name': 'Barbara','Last Name': 'Liskov',   'Email': 'not-an-email' },
+    { 'First Name': 'Ken',    'Last Name': 'Thompson', 'Email': 'ken@example.com', 'Do Not Email': 'Yes' },
+    { 'First Name': 'Ada2',   'Last Name': 'Dup',      'Email': 'ADA@example.com' }
+  ]), 'One week out');
+
+  assertEquals_('every skip is recorded', 5, plan.skipped.length);
+  // Row numbers are what make the report actionable, so pin them to the sheet.
+  assertEquals_('regret row number', 3, plan.skipped[0].rowNumber);
+  assertEquals_('regret reason', 'not attending', plan.skipped[0].reason);
+  assertEquals_('blank email row', 4, plan.skipped[1].rowNumber);
+  assertEquals_('blank email reason', 'no email', plan.skipped[1].reason);
+  // Blank and malformed are both "no valid email" in the counts, but they need
+  // different fixes, so the report distinguishes them.
+  assertEquals_('malformed email reason', 'malformed email', plan.skipped[2].reason);
+  assertEquals_('opt-out reason', 'opted out', plan.skipped[3].reason);
+  assertEquals_('duplicate reason', 'duplicate address', plan.skipped[4].reason);
+  assertEquals_('name carried through', 'Barbara Liskov', plan.skipped[2].name);
+  assertEquals_('email carried through', 'not-an-email', plan.skipped[2].email);
+
+  // The counters and the list must not drift apart.
+  assertEquals_('counts still agree', plan.skippedNoEmail, 2);
+}
+
+function testBroadcastPlan_resumesByCampaign_() {
+  Logger.log('testBroadcastPlan_resumesByCampaign_');
+  var rows = [
+    { 'First Name': 'Ada',   'Email': 'ada@example.com',   'Broadcast Sent': 'One week out' },
+    { 'First Name': 'Grace', 'Email': 'grace@example.com', 'Broadcast Sent': '' }
+  ];
+
+  // Re-running the same subject skips whoever already got it.
+  var same = broadcastPlan_(broadcastGridOf_(rows), 'One week out');
+  assertEquals_('resume: pending', 1, same.pending.length);
+  assertEquals_('resume: pending is Grace', 'grace@example.com', same.pending[0].email);
+  assertEquals_('resume: already sent', 1, same.alreadySent);
+
+  // A different subject is a different campaign, so everyone is in scope again.
+  var next = broadcastPlan_(broadcastGridOf_(rows), 'Day-of details');
+  assertEquals_('new campaign: pending', 2, next.pending.length);
+  assertEquals_('new campaign: already sent', 0, next.alreadySent);
+}
+
+function testBroadcastPlan_columnOrderIndependent_() {
+  Logger.log('testBroadcastPlan_columnOrderIndependent_');
+  var scrambled = RSVP_HEADERS.slice().reverse();
+  var plan = broadcastPlan_(broadcastGridOf_([
+    { 'First Name': 'Ada', 'Email': 'ada@example.com', 'Attending': 'Yes', 'Edit Token': 'tok-123' }
+  ], scrambled), 'One week out');
+
+  assertEquals_('pending count', 1, plan.pending.length);
+  assertEquals_('first name field', 'Ada', plan.pending[0].fields['first name']);
+  assertTruthy_('edit link built', plan.pending[0].fields['edit link'].indexOf('tok-123') !== -1);
+}
+
+function testBroadcastPlan_rowNumbersMatchSheet_() {
+  Logger.log('testBroadcastPlan_rowNumbersMatchSheet_');
+  // Row 1 is headers, so the first data row is sheet row 2. A wrong offset here
+  // would stamp "sent" on the neighbouring row and cause a double-send.
+  var plan = broadcastPlan_(broadcastGridOf_([
+    { 'Email': 'alan@example.com', 'Attending': 'No' },
+    { 'Email': 'ada@example.com',  'Attending': 'Yes' }
+  ]), 'One week out');
+
+  assertEquals_('pending count', 1, plan.pending.length);
+  assertEquals_('row number', 3, plan.pending[0].rowNumber);
+}
+
+function testRenderTemplate_() {
+  Logger.log('testRenderTemplate_');
+  var fields = { 'first name': 'Ada', 'years': '1994-2001', 'edit link': 'https://spiralpalooza.org/?edit=abc' };
+
+  assertEquals_('substitutes a token', '<p>Hi Ada,</p>',
+    renderTemplate_('<p>Hi {{First Name}},</p>', fields));
+  assertEquals_('ignores case and spacing', 'Ada Ada Ada',
+    renderTemplate_('{{first name}} {{ First Name }} {{FIRST NAME}}', fields));
+  assertEquals_('leaves an unknown token visible', 'Hi {{Nickname}}',
+    renderTemplate_('Hi {{Nickname}}', fields));
+  assertEquals_('substitutes the edit link', 'https://spiralpalooza.org/?edit=abc',
+    renderTemplate_('{{Edit Link}}', fields));
+  assertEquals_('handles a template with no tokens', '<p>Hello everyone</p>',
+    renderTemplate_('<p>Hello everyone</p>', fields));
+}
+
+function testRenderTemplate_escapesValues_() {
+  Logger.log('testRenderTemplate_escapesValues_');
+  // A name typed into the form must not be able to inject markup into the blast.
+  var html = renderTemplate_('<p>Hi {{First Name}}</p>', { 'first name': '<b>Ada</b> & "Co"' });
+  assertHas_('escapes angle brackets', html, '&lt;b&gt;Ada&lt;/b&gt;');
+  assertHas_('escapes ampersand', html, '&amp;');
+  assertLacks_('no raw tag', html, '<b>');
+}
+
+function testBroadcastPlan_addsPartyMembers_() {
+  Logger.log('testBroadcastPlan_addsPartyMembers_');
+  var plan = broadcastPlan_(broadcastGridOf_([
+    { 'First Name': 'Ada', 'Email': 'ada@example.com',
+      'Party Members': 'Sam (spouse) [sam@example.com] | Iris (kid) | Bob (kid) [bob@example.com]' },
+    { 'First Name': 'Grace', 'Email': 'grace@example.com', 'Party Members': '' }
+  ]), 'One week out');
+
+  assertEquals_('parties', 2, plan.pending.length);
+  assertEquals_('party address count', 2, plan.pending[0].partyEmails.length);
+  assertEquals_('party address 1', 'sam@example.com', plan.pending[0].partyEmails[0]);
+  assertEquals_('party address 2', 'bob@example.com', plan.pending[0].partyEmails[1]);
+  assertEquals_('party with no addresses adds none', 0, plan.pending[1].partyEmails.length);
+  // Iris has no address, so she costs nothing: 1 + 2 for Ada's party, 1 for Grace's.
+  assertEquals_('recipient count for the party', 3, plan.pending[0].recipientCount);
+  assertEquals_('total recipients', 4, plan.totalRecipients);
+}
+
+function testBroadcastPlan_dedupesAcrossParties_() {
+  Logger.log('testBroadcastPlan_dedupesAcrossParties_');
+  var plan = broadcastPlan_(broadcastGridOf_([
+    { 'First Name': 'Ada',   'Email': 'ada@example.com',
+      'Party Members': 'Sam (spouse) [sam@example.com] | Ada dup [ADA@example.com]' },
+    // Sam also RSVP'd on his own, and was already copied on Ada's message.
+    { 'First Name': 'Sam',   'Email': 'sam@example.com' },
+    { 'First Name': 'Grace', 'Email': 'grace@example.com',
+      'Party Members': 'Sam again (friend) [sam@example.com]' }
+  ]), 'One week out');
+
+  assertEquals_('parties', 2, plan.pending.length);
+  assertEquals_('Ada is not listed twice', 1, plan.pending[0].partyEmails.length);
+  assertEquals_('Sam\'s own row is skipped', 1, plan.skippedDuplicate);
+  assertEquals_('Grace is still sent to', 'grace@example.com', plan.pending[1].email);
+  assertEquals_('Grace does not re-add Sam', 0, plan.pending[1].partyEmails.length);
+  assertEquals_('nobody is counted twice', 3, plan.totalRecipients);
+}
+
+function testBroadcastPlan_alreadySentPartyStaysClaimed_() {
+  Logger.log('testBroadcastPlan_alreadySentPartyStaysClaimed_');
+  // Ada's party already got this message, so Sam must not receive it again via a
+  // later row that happens to list him.
+  var plan = broadcastPlan_(broadcastGridOf_([
+    { 'Email': 'ada@example.com', 'Party Members': 'Sam (spouse) [sam@example.com]',
+      'Broadcast Sent': 'One week out' },
+    { 'Email': 'grace@example.com', 'Party Members': 'Sam (friend) [sam@example.com]' }
+  ]), 'One week out');
+
+  assertEquals_('already sent', 1, plan.alreadySent);
+  assertEquals_('Grace still pending', 1, plan.pending.length);
+  assertEquals_('Sam not re-added', 0, plan.pending[0].partyEmails.length);
+}
+
+function testTakeWithinQuota_() {
+  Logger.log('testTakeWithinQuota_');
+  var pending = [
+    { email: 'a@x.com', recipientCount: 3 },
+    { email: 'b@x.com', recipientCount: 2 },
+    { email: 'c@x.com', recipientCount: 4 }
+  ];
+
+  var all = takeWithinQuota_(pending, 100);
+  assertEquals_('takes everything when there is room', 3, all.batch.length);
+  assertEquals_('counts recipients not messages', 9, all.recipients);
+
+  var some = takeWithinQuota_(pending, 5);
+  assertEquals_('stops before overrunning', 2, some.batch.length);
+  assertEquals_('recipients used', 5, some.recipients);
+
+  // Stops rather than skipping ahead to a party that would fit, so parties go out
+  // in sheet order and nobody is leapfrogged.
+  var exact = takeWithinQuota_(pending, 6);
+  assertEquals_('does not cherry-pick a smaller later party', 2, exact.batch.length);
+
+  var none = takeWithinQuota_(pending, 2);
+  assertEquals_('sends nothing when the first party will not fit', 0, none.batch.length);
+  assertEquals_('no recipients used', 0, none.recipients);
+}
+
+// Trimmed from a real Google Docs HTML export, keeping the parts that matter.
+function docExportSample_() {
+  return '<html><head><meta content="text/html; charset=UTF-8">' +
+         '<style type="text/css">.lst-kix_a-0 > li:before{content:"\\2022  "}' +
+         'ul.lst-kix_a-0{list-style-type:none}</style></head>' +
+         '<body class="doc-content" style="background-color:#ffffff;max-width:468pt;' +
+         'padding:72pt 72pt 72pt 72pt">' +
+         '<p style="padding:0;margin:0">Hi {{First Name}}</p>' +
+         '<ul class="lst-kix_a-0 start" style="padding:0;margin:0">' +
+         '<li style="margin-left:36pt">The template fill in</li></ul></body></html>';
+}
+
+function testInlineImagesFromHtml_() {
+  Logger.log('testInlineImagesFromHtml_');
+  var html = '<p>Map below</p>' +
+             '<img alt="" src="data:image/png;base64,iVBORw0KGgo=" style="width:626px">' +
+             '<img alt="" src="data:image/jpeg;base64,/9j/4AAQ==" style="width:100px">';
+  var out = inlineImagesFromHtml_(html);
+
+  // Gmail strips data: URIs from <img src>, so none may survive into the sent HTML.
+  assertLacks_('no data URI left in the html', out.html, 'data:image');
+  assertHas_('first image becomes a cid reference', out.html, 'src="cid:docimg1"');
+  assertHas_('second image becomes a cid reference', out.html, 'src="cid:docimg2"');
+  assertEquals_('both images extracted', 2, Object.keys(out.images).length);
+  assertTruthy_('blob created for the first', out.images['docimg1']);
+  assertEquals_('mime type preserved', 'image/png', out.images['docimg1'].mimeType);
+  assertEquals_('second mime type preserved', 'image/jpeg', out.images['docimg2'].mimeType);
+  assertHas_('surrounding markup untouched', out.html, '<p>Map below</p>');
+  assertHas_('other attributes survive', out.html, 'style="width:626px"');
+}
+
+function testInlineImagesFromHtml_noImages_() {
+  Logger.log('testInlineImagesFromHtml_noImages_');
+  var html = '<p>Just text and a <a href="https://x.test">link</a></p>';
+  var out = inlineImagesFromHtml_(html);
+  assertEquals_('html unchanged', html, out.html);
+  assertEquals_('no images', 0, Object.keys(out.images).length);
+
+  // A normal hosted image must not be touched; only data: URIs need lifting out.
+  var hosted = '<img src="https://example.test/map.png">';
+  assertEquals_('hosted image left alone', hosted, inlineImagesFromHtml_(hosted).html);
+}
+
+function testTidyDocHtml_() {
+  Logger.log('testTidyDocHtml_');
+  var out = tidyDocHtml_(docExportSample_());
+
+  // The Doc's one-inch page margin is what shows up as a big white border in mail.
+  assertLacks_('drops the 72pt page margin', out, 'padding:72pt');
+  assertHas_('keeps a small side padding', out, 'padding:0 12pt');
+  assertHas_('leaves the rest of the body style alone', out, 'max-width:468pt');
+
+  // Gmail strips :before, so these rules only ever removed the bullets.
+  assertLacks_('drops the style block', out, '<style');
+  assertLacks_('drops the :before bullet rules', out, 'li:before');
+  assertHas_('asks the list for real markers', out, 'list-style-type:disc');
+
+  assertHas_('keeps the content', out, 'The template fill in');
+  assertHas_('keeps tokens intact for rendering', out, '{{First Name}}');
+  assertHas_('keeps list indentation', out, 'margin-left:36pt');
+
+  // Taken verbatim from a real export: only some items carry the filler span, which
+  // is why the spacing looked uneven in the mail but fine in the doc.
+  var bullets = tidyDocHtml_(
+    '<ul style="padding:0"><li style="margin-left:36pt">' +
+      '<span style="font-size:7pt;font-weight:400;font-family:&quot;Times New Roman&quot;">&nbsp;</span>' +
+      '<span style="font-size:11pt">Allow time for parking</span></li>' +
+    '<li style="margin-left:36pt"><span style="font-size:11pt">4:00 Check-in</span></li></ul>');
+
+  assertLacks_('drops the phantom spacer', bullets, 'Times New Roman');
+  assertHas_('keeps the item text', bullets, 'Allow time for parking');
+  assertHas_('leaves items without a spacer alone', bullets, '4:00 Check-in');
+  assertEquals_('both items survive', 2, bullets.split('<li').length - 1);
+}
+
+function testMakeImagesResponsive_() {
+  Logger.log('testMakeImagesResponsive_');
+  // The shape Docs actually emits: a clipping wrapper plus the size repeated on the img.
+  var html = '<span style="overflow: hidden; display: inline-block; margin: 0.00px 0.00px; ' +
+             'width: 626.87px; height: 908.50px;">' +
+             '<img alt="" src="cid:docimg1" style="width: 626.87px; height: 908.50px; ' +
+             'margin-left: 0.00px;" title=""></span>';
+  var out = makeImagesResponsive_(html);
+
+  // The earlier attempt prepended these, so the fixed size that came later won and
+  // the image never actually scaled. Nothing fixed may survive on the img.
+  assertLacks_('no fixed size left on the image', out, '626.87px');
+  assertLacks_('no fixed height left anywhere', out, '908.50px');
+  assertHas_('image can shrink', out, 'max-width:100%');
+  assertHas_('image keeps its proportions', out, 'height:auto');
+  // The closing quote matters: the style must be replaced outright, not prefixed onto
+  // the old one, or the fixed size that follows wins and nothing scales.
+  assertHas_('img style replaced wholesale', out, 'style="max-width:100%;height:auto"');
+
+  // The wrapper clips at a fixed width, so relaxing only the img would achieve nothing.
+  assertLacks_('wrapper no longer clips', out, 'overflow: hidden');
+  assertHas_('wrapper keeps its other styling', out, 'display: inline-block');
+  assertHas_('src survives', out, 'src="cid:docimg1"');
+  assertHas_('other attributes survive', out, 'alt=""');
+}
+
+function testMakeImagesResponsive_leavesTextSpansAlone_() {
+  Logger.log('testMakeImagesResponsive_leavesTextSpansAlone_');
+  // A span with a width but no overflow:hidden is ordinary text, not an image box.
+  var text = '<span style="width: 200px"><img src="cid:a" style="width: 10px"></span>';
+  var out = makeImagesResponsive_(text);
+  assertHas_('text span keeps its width', out, 'width: 200px');
+  assertHas_('but the image is still relaxed', out, 'max-width:100%');
+}
+
+function testQuotaBlockedMessage_() {
+  Logger.log('testQuotaBlockedMessage_');
+
+  // The case that read as nonsense before: plenty of quota left, but the reserve
+  // swallows it. All four numbers have to appear or the message can't be reasoned about.
+  var reserved = quotaBlockedMessage_('me@example.com', 83, 90, 2);
+  assertHas_('shows what is left', reserved, '83');
+  assertHas_('shows the reserve', reserved, '90');
+  assertHas_('names the constant to change', reserved, 'BROADCAST_DAILY_RESERVE');
+  assertHas_('shows what is actually available', reserved, 'Available to this broadcast: 0');
+  assertHas_('shows what the next party needs', reserved, '2');
+  assertHas_('blames the reserve, not the day', reserved, 'reserve is what is blocking');
+
+  // Genuinely out of quota: waiting is the only fix, so don't send them chasing a constant.
+  var empty = quotaBlockedMessage_('me@example.com', 1, 10, 2);
+  assertLacks_('does not blame the reserve', empty, 'reserve is what is blocking');
+  // "Tomorrow" is wrong after an evening send, so it must not creep back in.
+  assertLacks_('avoids the misleading shorthand', empty, 'tomorrow');
+
+  // Partly blocked: 11 left, 10 reserved, 1 available, party needs 2. Lowering the
+  // reserve would work here too, so it must not be reported as "out of quota".
+  var partial = quotaBlockedMessage_('me@example.com', 11, 10, 2);
+  assertHas_('reserve still named as the fix', partial, 'reserve is what is blocking');
+
+  // Every branch must carry the same re-run guidance. The reserve branch is the one
+  // people will actually hit, so it is the one that must not be left vaguer.
+  var retry = 'Re-run about a day after this one, at the same time of day or later';
+  assertHas_('reserve-blocked says when to re-run', reserved, retry);
+  assertHas_('out-of-quota says when to re-run', empty, retry);
+  assertHas_('partly-blocked says when to re-run', partial, retry);
+  assertHas_('reserve-blocked warns the next morning is too soon', reserved, 'too soon');
+  assertHas_('out-of-quota warns the next morning is too soon', empty, 'too soon');
+}
+
+function testDescribeQuotaDelta_() {
+  Logger.log('testDescribeQuotaDelta_');
+  // 2 on To, 1 on Cc. Only "every address counts" can produce 3.
+  assertHas_('3 is conclusive', describeQuotaDelta_(3, 2, 1), 'CONCLUSIVE');
+  assertHas_('1 means messages are counted', describeQuotaDelta_(1, 2, 1), 'counts MESSAGES');
+  assertHas_('2 means Cc is free', describeQuotaDelta_(2, 2, 1), 'Cc ones appear not to');
+  assertHas_('0 is a lagging counter', describeQuotaDelta_(0, 2, 1), 'INCONCLUSIVE');
+  assertHas_('anything else is flagged', describeQuotaDelta_(7, 2, 1), 'UNEXPECTED');
+
+  // The conclusive case must not silently depend on the specific counts.
+  assertHas_('scales with the address count', describeQuotaDelta_(5, 3, 2), 'CONCLUSIVE');
+}
+
+function testTidyDocHtml_stopsAtTheSemicolon_() {
+  Logger.log('testTidyDocHtml_stopsAtTheSemicolon_');
+  // Google happens to put padding last today. If it ever doesn't, a regex that ran
+  // to the end of the attribute would silently swallow every property after it, so
+  // pin the boundary with padding in the middle.
+  var html = '<html><body style="background:#fff;padding:72pt 72pt 72pt 72pt;max-width:468pt;' +
+             'color:#000">x</body></html>';
+  var out = tidyDocHtml_(html);
+
+  assertLacks_('page margin gone', out, 'padding:72pt');
+  assertHas_('small padding applied', out, 'padding:0 12pt');
+  assertHas_('the property after padding survives', out, 'max-width:468pt');
+  assertHas_('and the one after that', out, 'color:#000');
+  assertHas_('the property before padding survives', out, 'background:#fff');
+}
+
+function testTidyDocHtml_leavesPlainHtmlAlone_() {
+  Logger.log('testTidyDocHtml_leavesPlainHtmlAlone_');
+  // Guards against the regexes mangling a body with no padding, or an unstyled list.
+  var plain = '<html><body><p>Hello</p><ul><li>one</li></ul></body></html>';
+  assertEquals_('plain HTML passes through unchanged', plain, tidyDocHtml_(plain));
+}
+
+function testLiveTestGaveUp_() {
+  Logger.log('testLiveTestGaveUp_');
+  // The menu wrapper decides between "passed", "failed" and "never ran" from this
+  // shape. If a bail-out ever returned ok:true, or nothing at all, an organizer would
+  // be told the send path works when it was never exercised.
+  var out = liveTestGaveUp_('no template doc');
+  assertEquals_('reports not ok', false, out.ok);
+  assertEquals_('carries the reason through', 'no template doc', out.message);
+}
+
+function testPlusAddress_() {
+  Logger.log('testPlusAddress_');
+  assertEquals_('tags a plain address', 'ada+ccprobe1@example.com',
+    plusAddress_('ada@example.com', 'ccprobe1'));
+  assertEquals_('keeps subdomains intact', 'ada+x@mail.example.co.uk',
+    plusAddress_('ada@mail.example.co.uk', 'x'));
+  assertEquals_('trims surrounding space', 'ada+x@example.com',
+    plusAddress_('  ada@example.com ', 'x'));
+  // Refusing these matters: a bad probe address would bounce and the delta would be
+  // read as evidence about cc counting when it is really a delivery failure.
+  assertEquals_('refuses an already-tagged address', '',
+    plusAddress_('ada+news@example.com', 'x'));
+  assertEquals_('refuses a second @', '', plusAddress_('ada@x@example.com', 'x'));
+  assertEquals_('refuses a missing local part', '', plusAddress_('@example.com', 'x'));
+  assertEquals_('refuses a non-address', '', plusAddress_('ada', 'x'));
+  assertEquals_('refuses empty', '', plusAddress_('', 'x'));
+}
+
+function testExtractDocId_() {
+  Logger.log('testExtractDocId_');
+  var id = '1a2B3c4D5e6F7g8H9i0JkLmNoPqRsTuVwXyZ-_abcdef';
+
+  assertEquals_('edit URL', id,
+    extractDocId_('https://docs.google.com/document/d/' + id + '/edit?usp=sharing'));
+  assertEquals_('URL with no trailing path', id,
+    extractDocId_('https://docs.google.com/document/d/' + id));
+  assertEquals_('open?id= form', id,
+    extractDocId_('https://drive.google.com/open?id=' + id));
+  assertEquals_('bare id', id, extractDocId_(id));
+  assertEquals_('surrounding whitespace', id, extractDocId_('  ' + id + '\n'));
+  assertEquals_('rejects junk', '', extractDocId_('not a link'));
+  assertEquals_('rejects empty', '', extractDocId_(''));
+  // A short id-looking string is likelier to be a typo than a real doc, and a wrong
+  // id would silently load the wrong email.
+  assertEquals_('rejects too-short id', '', extractDocId_('abc123'));
+}
+
+function testFindLeftoverTokens_() {
+  Logger.log('testFindLeftoverTokens_');
+  assertEquals_('none when fully rendered', 0, findLeftoverTokens_('<p>Hi Ada</p>').length);
+  assertEquals_('finds one', '{{First Name}}', findLeftoverTokens_('<p>Hi {{First Name}}</p>')[0]);
+  assertEquals_('dedupes repeats', 1, findLeftoverTokens_('{{Nickname}} and {{Nickname}}').length);
+  assertEquals_('finds several', 2, findLeftoverTokens_('{{A}} {{B}}').length);
+  // The Docs export wraps text in spans, so a token split by a mid-word formatting
+  // change arrives with markup inside the braces and never substitutes. Catching it
+  // is the whole point of the warning, so the match deliberately allows any
+  // non-brace content, markup included.
+  assertEquals_('flags a span-split token', 1,
+    findLeftoverTokens_('{{First <span>Name}}').length);
+}
+
+// ---- live quota probe (SENDS REAL MAIL) ------------------------------------
+//
+// takeWithinQuota_ assumes every address on a message costs one against the daily cap.
+// Google documents the cap as "Email recipients per day" and says quotas are "based on
+// the number of email recipients", but no first-party page spells out how the individual
+// address fields count, so this settles it by measurement on the account that will do the
+// sending. It probes To and Cc together so the answer holds if party members ever move
+// back to Cc.
+//
+// Deliberately NOT part of runBroadcastTests: it sends real mail and spends three of
+// the runner's 100 daily recipients. Run it once per account, by hand.
+
+// "ada@example.com" + "bcast1" -> "ada+bcast1@example.com". Plus-addressed variants
+// are distinct addresses at the SMTP level but land in the same inbox, so the probe
+// needs no second account and cannot mail anyone else by mistake. Returns '' when the
+// address can't take a tag, rather than inventing one that would bounce.
+function plusAddress_(email, tag) {
+  var s = String(email || '').trim();
+  var at = s.indexOf('@');
+  if (at <= 0 || s.indexOf('@', at + 1) !== -1) return '';
+  var local = s.slice(0, at);
+  if (local.indexOf('+') !== -1) return '';   // already tagged; a second + is unreliable
+  return local + '+' + tag + s.slice(at);
+}
+
+// The counter can lag a moment behind a send. Believing an unsettled zero would read
+// as "extra recipients are free" and silently endorse the wrong batching, so give it
+// time to move.
+function quotaAfterSettling_(before) {
+  var after = MailApp.getRemainingDailyQuota();
+  for (var i = 0; i < 5 && after === before; i++) {
+    Utilities.sleep(2000);
+    after = MailApp.getRemainingDailyQuota();
+  }
+  return after;
+}
+
+// Read a probe delta. Pure, so the interpretation is unit-tested rather than only
+// ever exercised by a live send.
+//
+// With 2 addresses on To and 1 on Cc, a delta equal to the total is conclusive:
+// counting messages would give 1, counting only To would give 2, counting only Cc
+// would give 1. Nothing but "every address counts" produces 3. The other outcomes
+// are ambiguous between a couple of models, but all of them mean the batching
+// over-counts, which errs toward extra runs rather than a mid-send cutoff.
+// (Relies on toCount > 1 to stay unambiguous.)
+function describeQuotaDelta_(used, toCount, ccCount) {
+  var total = toCount + ccCount;
+  if (used === total) {
+    return 'CONCLUSIVE: every address counts, in To and in Cc alike (' + total +
+           ' addresses cost ' + used + '). takeWithinQuota_ is correct as written, and stays ' +
+           'correct if party members ever move back to Cc.';
+  }
+  if (used === 0) {
+    return 'INCONCLUSIVE: the counter never moved, even after settling. Re-run before trusting it.';
+  }
+  if (used === 1) {
+    return 'The cap counts MESSAGES, not addresses. takeWithinQuota_ is over-conservative: more ' +
+           'runs than strictly needed, but it can never overrun the cap.';
+  }
+  if (used === toCount) {
+    return 'To addresses count but Cc ones appear not to. Fine while the whole party is on To; ' +
+           'revisit before moving anyone back to Cc.';
+  }
+  return 'UNEXPECTED: delta of ' + used + ' for ' + total +
+         ' addresses. Investigate before trusting the batching maths.';
+}
+
+function runQuotaRecipientProbe() {
+  var me = Session.getEffectiveUser().getEmail();
+  if (!me) { Logger.log('FAILED: could not determine the running account.'); return; }
+
+  var extra = [plusAddress_(me, 'quota1'), plusAddress_(me, 'quota2')];
+  if (!extra[0] || !extra[1]) {
+    Logger.log('FAILED: %s cannot take a +tag, so the probe has no safe second address.', me);
+    return;
+  }
+
+  var before = MailApp.getRemainingDailyQuota();
+  Logger.log('Running as %s. Recipients remaining before: %s', me, before);
+  if (before < 5) {
+    Logger.log('SKIPPED: only %s left today, which is too few to probe safely. Try tomorrow.', before);
+    return;
+  }
+
+  // Both fields in one message: 2 on To (the shape runBroadcast_ actually sends) and
+  // 1 on Cc, so the result stays meaningful if party members ever move back to Cc.
+  MailApp.sendEmail({
+    to: [me, extra[0]].join(','),
+    cc: extra[1],
+    subject: 'Spiralpalooza quota probe - safe to delete',
+    htmlBody: '<p>Measuring how the daily send quota counts To and Cc recipients. ' +
+              'Nothing to do; delete this.</p>',
+    name: 'Spiralpalooza'
+  });
+
+  var after = quotaAfterSettling_(before);
+  var used = before - after;
+  Logger.log('Recipients remaining after: %s   (delta %s for 2 To + 1 Cc)', after, used);
+  Logger.log('RESULT: %s', describeQuotaDelta_(used, 2, 1));
+}
+
+// ---- live broadcast test (SENDS REAL MAIL, to the runner only) --------------
+//
+// Exercises the real send path - Doc export, token rendering, MailApp with cc, and
+// the write-back - against a generated fixture in the RSVP_TEST tab. Follows the
+// same trick as testDoPost_endToEnd_: point RSVP_SHEET_NAME at the test tab, restore
+// it in `finally`, so production code runs unmodified over test data.
+//
+// Every address is a plus-addressed variant of whoever runs it, so the mail can only
+// reach the runner's own inbox. Costs 3 of their daily recipients.
+//
+// Calls runBroadcast_ rather than sendBroadcast because SpreadsheetApp.getUi() is not
+// available from the Run dropdown. That skips the dialogs and the quota gate only.
+
+// The fixture, as {header: value} rows. Separate from the send so the expected plan
+// and the rows can't drift apart.
+function liveTestRows_(me) {
+  var addr = function (tag) { return plusAddress_(me, tag); };
+  return [
+    { 'First Name': 'Ada',    'Last Name': 'Lovelace', 'Email': addr('ada'),   'Attending': 'Yes',
+      'Years at Children First': '1994-2001', 'Total in Party': 3,
+      'Party Members': 'Sam (spouse) [' + addr('sam') + '] | Iris (kid)', 'Edit Token': 'live-test-token' },
+    { 'First Name': 'Grace',  'Last Name': 'Hopper',   'Email': addr('grace'), 'Attending': 'Yes',
+      'Years at Children First': '1985', 'Total in Party': 1 },
+    { 'First Name': 'Alan',   'Last Name': 'Turing',   'Email': addr('alan'),  'Attending': 'No' },
+    { 'First Name': 'Ken',    'Last Name': 'Thompson', 'Email': addr('ken'),   'Attending': 'Yes',
+      'Do Not Email': 'Yes' },
+    { 'First Name': 'Edsger', 'Last Name': 'Dijkstra', 'Email': '',            'Attending': 'Yes' },
+    // Same address as Ada in a different case: proves the dedupe is case-insensitive.
+    { 'First Name': 'Ada2',   'Last Name': 'Duplicate', 'Email': String(addr('ada')).toUpperCase(),
+      'Attending': 'Yes' }
+  ];
+}
+
+// Returns { ok, message } rather than only logging, so the menu wrapper can tell a
+// clean run from one that never started. An assertion failure still throws: the
+// caller decides whether to surface it in a dialog or let it surface in the log.
+function runBroadcastLiveTest() {
+  var me = Session.getEffectiveUser().getEmail();
+  if (!me) return liveTestGaveUp_('Could not determine which account is running this.');
+  if (!plusAddress_(me, 'ada')) {
+    return liveTestGaveUp_(me + ' cannot take a +tag, so there are no safe test addresses. ' +
+                           'The test only ever mails variants of the runner\'s own address.');
+  }
+
+  var doc = loadBroadcastDoc_(broadcastDocId_());
+  if (!doc.ok) {
+    return liveTestGaveUp_(String(doc.error) + '\n\nSet one with "Choose template doc…" first, ' +
+                           'and give it a test-only name so it cannot collide with a real campaign.');
+  }
+  Logger.log('Template: "%s"  (this is also the subject and the campaign key)', doc.subject);
+
+  var remaining = MailApp.getRemainingDailyQuota();
+  if (remaining < 5) {
+    return liveTestGaveUp_('Only ' + remaining + ' sends left on this account today, and the test ' +
+                           'needs 5. A partial run would prove nothing, so it stopped instead.');
+  }
+
+  var sheet = makeTestSheet_();
+  liveTestRows_(me).forEach(function (r) { appendByHeader_(sheet, r); });
+
+  var savedName = RSVP_SHEET_NAME;
+  RSVP_SHEET_NAME = TEST_SHEET_NAME;
+  try {
+    var plan = broadcastPlan_(broadcastGrid_(), doc.subject);
+
+    // Same numbers Stage 4 of the test procedure asks you to eyeball, checked here
+    // instead so a filtering regression fails loudly rather than being missed.
+    assertEquals_('parties to send', 2, plan.pending.length);
+    assertEquals_('people reached', 3, plan.totalRecipients);
+    assertEquals_('skipped regret', 1, plan.skippedRegret);
+    assertEquals_('skipped opt-out', 1, plan.skippedOptOut);
+    assertEquals_('skipped no email', 1, plan.skippedNoEmail);
+    assertEquals_('skipped duplicate', 1, plan.skippedDuplicate);
+    assertEquals_('Ada\'s party adds one member', 1, plan.pending[0].partyEmails.length);
+
+    var rendered = renderTemplate_(doc.htmlBody, plan.pending[0].fields);
+    var leftovers = findLeftoverTokens_(rendered);
+    if (leftovers.length) {
+      Logger.log('WARNING: these tokens did not substitute and will be sent literally: %s',
+                 leftovers.join(', '));
+    }
+
+    Logger.log('Sending 2 messages to 3 recipients, all variants of %s …', me);
+    var result = runBroadcast_(sheet, doc, plan.pending);
+    assertEquals_('messages sent', 2, result.sent);
+    assertEquals_('messages failed', 0, result.failed);
+
+    // Write-back: without this the resume logic silently degrades into double-sending.
+    var after = sheet.getDataRange().getValues();
+    var col = {};
+    after[0].forEach(function (h, i) { col[String(h).trim()] = i; });
+    assertEquals_('row 2 stamped with the campaign', doc.subject, after[1][col['Broadcast Sent']]);
+    assertTruthy_('row 2 stamped with a time', after[1][col['Broadcast Sent At']]);
+    assertEquals_('skipped row left unstamped', '', after[3][col['Broadcast Sent']]);
+
+    // Resume and new-campaign behaviour, recomputed from the updated sheet. No extra sends.
+    var again = broadcastPlan_(broadcastGrid_(), doc.subject);
+    assertEquals_('re-running the same campaign sends nothing', 0, again.pending.length);
+    assertEquals_('…because both parties are already done', 2, again.alreadySent);
+
+    var renamed = broadcastPlan_(broadcastGrid_(), doc.subject + ' (renamed)');
+    assertEquals_('renaming the doc re-includes everyone', 2, renamed.pending.length);
+
+    var checklist = 'Everything the script can check by itself passed, and 2 messages went to ' +
+      '3 addresses, all variants of ' + me + '.\n\n' +
+      'Now check that inbox for the things no test can see:\n' +
+      '  1. Two emails, not three. One is addressed to both +ada and +sam.\n' +
+      '  2. From shows "Spiralpalooza"; Reply goes to childrenfirstmail@gmail.com.\n' +
+      '  3. Greeting reads "Ada" / "Grace"; no {{tokens}} left visible.\n' +
+      '  4. Bold, links, lists and any image survived.\n' +
+      '  5. Nothing arrived for the +alan, +ken or Edsger rows.' +
+      (leftovers.length ? '\n\nWARNING: these tokens did not substitute and were sent literally: ' +
+                          leftovers.join(', ') : '') +
+      '\n\nThe ' + TEST_SHEET_NAME + ' tab is left behind for inspection; re-running rebuilds it.';
+
+    Logger.log('LIVE TEST PASSED.\n%s', checklist);
+    return { ok: true, message: checklist };
+  } finally {
+    RSVP_SHEET_NAME = savedName;   // restore even on assertion failure, before anything else runs
+  }
+}
+
+// Bail-out path: the test never got far enough to prove or disprove anything, which
+// is different from failing and must not read as a pass.
+function liveTestGaveUp_(why) {
+  Logger.log('LIVE TEST DID NOT RUN: %s', why);
+  return { ok: false, message: why };
+}
+
+// ---- runner (pick this in the Run dropdown) ---------------------------------
+
+function runBroadcastTests() {
+  testBroadcastPlan_filters_();
+  testBroadcastPlan_recordsWhichRowsAreSkipped_();
+  testBroadcastPlan_resumesByCampaign_();
+  testBroadcastPlan_columnOrderIndependent_();
+  testBroadcastPlan_rowNumbersMatchSheet_();
+  testBroadcastPlan_addsPartyMembers_();
+  testBroadcastPlan_dedupesAcrossParties_();
+  testBroadcastPlan_alreadySentPartyStaysClaimed_();
+  testTakeWithinQuota_();
+  testRenderTemplate_();
+  testRenderTemplate_escapesValues_();
+  testExtractDocId_();
+  testFindLeftoverTokens_();
+  testLiveTestGaveUp_();
+  testPlusAddress_();
+  testQuotaBlockedMessage_();
+  testDescribeQuotaDelta_();
+  testInlineImagesFromHtml_();
+  testInlineImagesFromHtml_noImages_();
+  testTidyDocHtml_();
+  testMakeImagesResponsive_();
+  testMakeImagesResponsive_leavesTextSpansAlone_();
+  testTidyDocHtml_stopsAtTheSemicolon_();
+  testTidyDocHtml_leavesPlainHtmlAlone_();
+  Logger.log('ALL BROADCAST TESTS PASSED');
 }
