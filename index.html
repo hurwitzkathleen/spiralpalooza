@@ -38,8 +38,27 @@ nav{background:var(--cf-blue);border-bottom:3px solid var(--cf-orange);padding:0
 .vol-shifts-title{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;color:var(--cf-muted);margin-bottom:5px}
 .vol-shift{display:flex;align-items:center;gap:7px;font-size:12px;color:var(--cf-text);cursor:pointer;padding:3px 0}
 .vol-shift input{flex-shrink:0;accent-color:var(--cf-orange);margin:0}
+.kbyg-alert{background:var(--cf-orange);border-bottom:2px solid var(--cf-blue);padding:0.8rem 1.5rem;cursor:pointer;transition:filter 0.15s}
+.kbyg-alert:hover{filter:brightness(1.05)}
+.kbyg-inner{max-width:880px;margin:0 auto;text-align:center}
+.kbyg-line{margin:0;font-family:var(--sans);font-size:15px;color:#5c3410;line-height:1.6}
+.kbyg-line strong{color:var(--cf-text)}
+.kbyg-alert-badge{display:inline-block;background:var(--cf-blue);color:#fff;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1px;padding:2px 9px;border-radius:20px;margin-right:4px;position:relative;top:-1px}
+.kbyg-alert-cta{font-weight:700;color:var(--cf-blue);white-space:nowrap;margin-left:4px}
+.kbyg-weather{font-size:13.5px;margin-top:2px}
+.kbyg-sec{background:#fff;border:1.5px solid var(--cf-border);border-left:4px solid var(--cf-blue);border-radius:4px;padding:1.1rem 1.35rem;margin-bottom:1.1rem;line-height:1.7;font-size:14px}
+.kbyg-sec h3{font-family:var(--sans);font-size:16px;font-weight:700;color:var(--cf-blue);margin:0 0 0.6rem}
+.kbyg-sec ul{margin:0;padding-left:1.25rem}
+.kbyg-sec li{margin-bottom:0.45rem}
+.kbyg-time{display:flex;gap:12px;align-items:baseline;padding:7px 0;border-bottom:1px dashed var(--cf-border)}
+.kbyg-time:last-child{border-bottom:none}
+.kbyg-time-when{font-family:var(--sans);font-weight:700;color:var(--cf-blue);min-width:62px;flex-shrink:0}
 @media(min-width:681px){.nav-links{display:flex!important}}
 @media(max-width:680px){
+    .kbyg-alert{flex-direction:column;gap:6px;text-align:center;padding:0.75rem 1rem}
+  .kbyg-alert-text{font-size:14px}
+  .kbyg-alert-text span{display:block;margin-top:2px}
+  .kbyg-time{flex-direction:column;gap:1px}
   .action-banner{gap:0.35rem;padding:0.6rem 1rem;flex-direction:column;align-items:stretch}
   .action-item{font-size:13px;justify-content:center;padding:7px 10px;background:#fff;border:1px solid var(--cf-border);border-radius:4px}
   .shirt-proof-combined{display:none!important}
@@ -169,6 +188,7 @@ section{display:none}section.active{display:block}
   </button>
   <div class="nav-links" id="nav-links">
     <a class="active" onclick="show('home',this);closeMenu()">Home</a>
+    <a onclick="show('knowbefore',this);closeMenu()" style="cursor:pointer">Know Before You Go</a>
     <a onclick="show('rsvp',this);closeMenu()">RSVP</a>
     <a onclick="show('shirts',this);closeMenu()">T-Shirts</a>
     <a onclick="show('volunteer',this);closeMenu()">Volunteer</a>
@@ -186,7 +206,7 @@ section{display:none}section.active{display:block}
             <div class="slide-eyebrow" style="color:#ffffff">Welcome</div>
             <div class="slide-h" style="color:#ffffff">Friends of the Family:<br>The Spiralpalooza<br>Remembering Party</div>
             <div class="slide-quote" style="color:#ffffff">Celebrating 36 years of Children First &mdash; together, what we have made together!</div>
-            <span class="slide-cta" onclick="show('rsvp',null)" style="background:#E8D840;color:#3D1C00">RSVP Now</span>
+            <span class="slide-cta" onclick="show('rsvp',null)" style="background:#E8D840;color:#3D1C00">It&rsquo;s never too late to RSVP</span>
           </div>
         </div>
         <div class="slide">
@@ -194,7 +214,7 @@ section{display:none}section.active{display:block}
           <div class="slide-body">
             <div class="slide-eyebrow" style="color:#ffffff">October 3, 2026</div>
             <div class="slide-h" style="color:#ffffff">Join us on the playground<br>at 1211 Carroll Street</div>
-            <div class="slide-quote" style="color:#ffffff">RSVP by September 15, 2026 &middot; 4:00 pm until&hellip; &middot; 1211 Carroll St, Durham NC</div>
+            <div class="slide-quote" style="color:#ffffff">It&rsquo;s never too late to RSVP! &middot; 4:00 pm until&hellip; &middot; 1211 Carroll St, Durham NC</div>
             <span class="slide-cta" onclick="window.open('https://maps.google.com/?q=1211+Carroll+Street+Durham+NC+27707','_blank')" style="background:#E8D840;color:#3D1C00">Get directions</span>
           </div>
         </div>
@@ -222,15 +242,29 @@ section{display:none}section.active{display:block}
     <div class="cdots" id="cdots"></div>
   </div>
 
+
+  <div class="kbyg-alert" onclick="show('knowbefore',null)">
+    <div class="kbyg-inner">
+      <p class="kbyg-line">
+        <span class="kbyg-alert-badge">New</span>
+        <strong>Know Before You Go!</strong>
+        Timing, parking, shirt pickup, and everything happening on the day.
+        <span class="kbyg-alert-cta">Read it &rarr;</span>
+      </p>
+      <p class="kbyg-line kbyg-weather">
+        &#9748; We&rsquo;ll see you <strong>Rain or Shine!</strong> We&rsquo;ve got tarps and tents &mdash; you bring the raincoat and All-Weather-Player mentality!
+      </p>
+    </div>
+  </div>
+
+  <div class="action-banner">
+    <a class="action-item" onclick="show('rsvp',null)"><span>&#9989; If you&rsquo;re still considering coming, we hope you will! <strong>It&rsquo;s never too late to RSVP!</strong></span></a>
+    <a class="action-item" onclick="show('volunteer',null)"><span>&#128153; Volunteer <strong>anytime</strong> &mdash; the sooner the better!</span></a>
+  </div>
   <div class="event-banner">
     <div class="event-detail">&#128197; <span><strong>Saturday, October 3, 2026</strong></span></div>
     <div class="event-detail">&#9200; <span><strong>4:00 pm</strong></span></div>
     <div class="event-detail">&#128205; <span><strong>Children First Playground</strong> &middot; 1211 Carroll St, Durham, NC 27707</span></div>
-  </div>
-
-  <div class="action-banner">
-    <a class="action-item" onclick="show('rsvp',null)">&#9989; RSVP by <strong>September 15</strong></a>
-    <a class="action-item" onclick="show('volunteer',null)">&#128153; Volunteer <strong>anytime</strong> &mdash; the sooner the better!</a>
   </div>
 
   <div class="wrap">
@@ -311,7 +345,7 @@ section{display:none}section.active{display:block}
 <section id="rsvp">
   <div class="wrap">
     <div class="page-title">RSVP</div>
-    <div class="page-sub">Let us know you&rsquo;re coming to Spiralpalooza on October 3, 2026! <strong>RSVP deadline: September 15, 2026.</strong></div>
+    <div class="page-sub">Let us know you&rsquo;re coming to Spiralpalooza on October 3, 2026! <strong>It&rsquo;s never too late to RSVP</strong> &mdash; if you&rsquo;re still considering coming, we hope you will!</div>
     <div style="margin-bottom:1.25rem">
       <a onclick="show('whocoming',null)" style="color:var(--cf-blue);font-size:14px;font-weight:700;cursor:pointer;text-decoration:underline">&#128101; See who&rsquo;s coming so far &rarr;</a>
     </div>
@@ -486,7 +520,7 @@ section{display:none}section.active{display:block}
       <div id="rsvp-error" style="display:none;color:#a32d2d;font-size:13px;margin-bottom:0.75rem;padding:0.5rem 0.75rem;background:#fde8e8;border-radius:4px"></div>
 
       <button type="button" onclick="submitRSVP()" id="rsvp-submit-btn" style="background:var(--cf-blue);color:#fff;border:none;padding:11px 28px;border-radius:4px;font-family:var(--sans);font-size:14px;font-weight:700;cursor:pointer;transition:background 0.15s">Submit RSVP &rarr;</button>
-      <p style="font-size:12px;color:var(--cf-muted);margin-top:0.75rem;font-style:italic">&#10003; Your response will be saved to our records. RSVP deadline: September 15, 2026.</p>
+      <p style="font-size:12px;color:var(--cf-muted);margin-top:0.75rem;font-style:italic">&#10003; Your response will be saved to our records. It&rsquo;s never too late to RSVP!</p>
     </form>
   </div>
 </section>
@@ -1094,6 +1128,76 @@ function populateShirtForm(r){
   </div>
 </section>
 
+
+<section id="knowbefore">
+  <div class="wrap">
+    <div class="page-title">Know Before You Go!</div>
+    <div class="page-sub">Everything you need for Saturday, October 3 &mdash; timing, parking, shirt pickup, and all the things to find and do.</div>
+
+    <div class="kbyg-sec">
+      <h3>What&rsquo;s Your Why?</h3>
+      <p style="margin-bottom:0.7rem">We know that each person coming to Spiralpalooza has their own reasons for saying &ldquo;yes&rdquo; and their own hopes for our time together. Connection and Reconnection. Reminiscing and Revisiting. Play and Fun. Gratitude and Grief. We&rsquo;re here for ALL of that.</p>
+      <p style="margin-bottom:0.7rem">And we hope that, for each of you, the celebration creates a moment to consider yourself across time. What was true for you when you were here, that is still true today? What was true then that is different for you now &mdash; inside and outside? What part of being a Children Firster do you want to claim and keep?</p>
+      <p style="margin:0">We wonder &mdash; if you take a little time to look at your portfolios, maybe especially your Progress Conference, would that deepen and enliven your experience of being here for Spiralpalooza?</p>
+    </div>
+
+    <div class="kbyg-sec" style="border-left-color:var(--cf-green)">
+      <h3 style="color:var(--cf-green)">&#9200; Timing of Events</h3>
+      <p style="margin:0 0 0.6rem;font-style:italic;color:var(--cf-muted)">Allow time for parking and walking &mdash; more on parking below.</p>
+      <div class="kbyg-time"><div class="kbyg-time-when">4:00</div><div>Check-in at the driveway &mdash; pick up your lanyards and a written program, or scan the QR code for the digital program.</div></div>
+      <div class="kbyg-time"><div class="kbyg-time-when">4:30</div><div>Pierce, Stephen and their band on the Bike Deck.</div></div>
+      <div class="kbyg-time"><div class="kbyg-time-when">5:00</div><div>Magic Circle (given our numbers, more like a Magic Blob) on the playground.</div></div>
+      <div class="kbyg-time"><div class="kbyg-time-when">6:00</div><div>Pizza &mdash; dessert to follow.</div></div>
+      <div class="kbyg-time"><div class="kbyg-time-when">9:00</div><div>Street Play closes for clean-up.</div></div>
+    </div>
+
+    <div class="kbyg-sec" style="border-left-color:var(--cf-orange)">
+      <h3 style="color:#8a5c2e">&#128663; Parking</h3>
+      <ul>
+        <li>Our block of Carroll Street is <strong>closed for play</strong> &mdash; plan for drop-offs and/or a walk to get here.</li>
+        <li>There is street parking in all directions. The easiest parking will be on the streets around <strong>Morehead Elementary School</strong>.</li>
+        <li>Consider carpooling!</li>
+      </ul>
+    </div>
+
+    <div class="kbyg-sec" style="border-left-color:var(--cf-green)">
+      <h3 style="color:var(--cf-green)">&#128085; Shirts</h3>
+      <ul>
+        <li><strong>Ordered shirts?</strong> Pick them up before or after the Magic Circle. They&rsquo;re bagged up and ready for you with the invoice tucked inside. You can pay by Venmo (<strong>@Children-First</strong>), check, or cash.</li>
+        <li><strong>Want to buy shirts?</strong> The sales table will be open in the driveway after the Magic Circle.</li>
+      </ul>
+    </div>
+
+    <div class="kbyg-sec">
+      <h3>&#127912; Things to Find &amp; Do</h3>
+      <ul>
+        <li><strong>Slide Show: 36 Years of Children First</strong> &mdash; in the Loft Room and in the office.</li>
+        <li><strong>Studio</strong> &mdash; make a &ldquo;portfolio&rdquo; page of a Children First memory or gratitude. You can use one of our Instax cameras to capture an image to be part of your page.</li>
+        <li><strong>Memory Boxes</strong> &mdash; find one in the Water Deck, at the drawing table up at the street, or at the King-McClains&rsquo; picnic table, and record a Children First memory on a reading word card.</li>
+        <li><strong>Find Donna</strong> wherever she settles with her story notebook &mdash; she&rsquo;ll have one of your old stories ready for a read aloud!</li>
+        <li><strong>Street Side Children First!</strong> Water Play! Big Blocks! Balls! Bikes! Face Paint!</li>
+        <li><strong>Children First Archives</strong> at the Water Deck &mdash; sit awhile with old Welcome Books, &ldquo;The Book of Old Friends,&rdquo; and documentation compilations like the Playground Re-Build, many years of Eno Trips, the story of the library being built, and project work from various years.</li>
+        <li><strong>Playground, Creek and Creation Station</strong> all open for play.</li>
+        <li><strong>Kid-friendly snacks and drinks</strong> at Street-Side Children First and the Playground Snack Tables.</li>
+        <li><strong>Adult-friendly snacks</strong> in the Driveway Caf&eacute; and on the Block Shelves on the Playground.</li>
+        <li><strong>Adult drinks</strong> at the Driveway Caf&eacute; and in the Water Deck.</li>
+      </ul>
+    </div>
+
+    <div class="kbyg-sec" style="border-left-color:var(--cf-orange)">
+      <h3 style="color:#8a5c2e">&#128506; Map</h3>
+      <a href="spiralpalooza-map.png" target="_blank" rel="noopener" style="display:block;border:1px solid var(--cf-border);border-radius:4px;overflow:hidden;background:#fff">
+        <img src="spiralpalooza-map.png" alt="Spiralpalooza party map showing the playground, street play, food, check-in and activity areas" style="width:100%;display:block" loading="lazy">
+      </a>
+      <p style="font-size:12px;color:var(--cf-muted);font-style:italic;margin:0.5rem 0 0;text-align:center">Tap or click the map to open it full size.</p>
+    </div>
+
+    <div style="background:var(--cf-blue-light);border:1px solid var(--cf-border);border-left:4px solid var(--cf-blue);border-radius:4px;padding:1rem 1.25rem;font-size:14px;line-height:1.6">
+      <strong>Questions?</strong> Reach Donna at <a href="tel:9199430127" style="color:var(--cf-blue)">919-943-0127</a> or <a href="mailto:childrenfirstmail@gmail.com" style="color:var(--cf-blue)">childrenfirstmail@gmail.com</a>
+    </div>
+  </div>
+</section>
+
 <section id="whocoming">
   <div class="wrap">
     <div class="page-title">Who&rsquo;s Coming</div>
@@ -1547,7 +1651,7 @@ function enterEditMode(type, token){
     }
   }
   var hash = window.location.hash.replace('#','');
-  var valid = ['home','rsvp','shirts','volunteer','whocoming'];
+  var valid = ['home','rsvp','shirts','volunteer','whocoming','knowbefore'];
   if(hash && valid.indexOf(hash) > -1){
     show(hash, null, false);
   } else {
